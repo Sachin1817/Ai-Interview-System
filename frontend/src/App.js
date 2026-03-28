@@ -1,7 +1,7 @@
 // src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Components
@@ -14,6 +14,10 @@ import AIInterview from './components/interview/AIInterview';
 import AssessmentHub from './components/assessment/AssessmentHub';
 import CareerAdvisor from './components/career/CareerAdvisor';
 import Analytics from './components/analytics/Analytics';
+
+// New 3D Components
+import ThreeDCard from './components/layout/ThreeDCard';
+import FloatingBackground from './components/layout/FloatingBackground';
 
 // ─── Dashboard ───
 const Dashboard = () => {
@@ -32,32 +36,36 @@ const Dashboard = () => {
     ];
 
     return (
-        <div className="min-h-screen p-6 flex flex-col items-center justify-center">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="glass-panel p-10 rounded-3xl max-w-5xl w-full">
-                <div className="text-center mb-10">
-                    <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 mb-3">
+        <div className="min-h-screen p-6 flex flex-col items-center justify-center perspective-1000">
+            <motion.div initial={{ opacity: 0, rotateX: -10, y: 50 }} animate={{ opacity: 1, rotateX: 0, y: 0 }}
+                transition={{ type: "spring", damping: 20 }}
+                className="glass-panel p-10 rounded-3xl max-w-5xl w-full relative z-10 preserve-3d">
+                
+                <div className="text-center mb-10 translate-z-10">
+                    <motion.h1 
+                        initial={{ scale: 0.9 }}
+                        animate={{ scale: 1 }}
+                        className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 mb-3 drop-shadow-2xl">
                         Hello, {user?.name || 'Student'}! 🚀
-                    </h1>
+                    </motion.h1>
                     <p className="text-slate-400 text-lg">Your complete AI placement preparation platform. Let's get placed!</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {modules.map((m, i) => (
-                        <Link key={m.title} to={m.href}>
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.07 }}
-                                className={`glass-card p-6 rounded-2xl cursor-pointer group hover:scale-[1.02] transition-all duration-200 border border-slate-700/50 hover:border-${m.color}-500/40`}>
-                                <div className="flex items-start justify-between mb-3">
-                                    <span className="text-3xl">{m.icon}</span>
-                                    <span className={`text-xs bg-${m.color}-500/10 text-${m.color}-400 px-2 py-0.5 rounded-full border border-${m.color}-500/20 font-semibold`}>
-                                        {m.badge}
-                                    </span>
+                        <Link key={m.title} to={m.href} className="flex">
+                            <ThreeDCard className="w-full">
+                                <div className={`glass-card h-full p-6 rounded-2xl cursor-pointer group border border-slate-700/50 hover:border-${m.color}-500/40 transition-all duration-300 transform-gpu`}>
+                                    <div className="flex items-start justify-between mb-3">
+                                        <span className="text-3xl floating-3d">{m.icon}</span>
+                                        <span className={`text-xs bg-${m.color}-500/10 text-${m.color}-400 px-2 py-0.5 rounded-full border border-${m.color}-500/20 font-semibold`}>
+                                            {m.badge}
+                                        </span>
+                                    </div>
+                                    <h3 className={`text-lg font-bold text-${m.color}-400 mb-1.5 group-hover:text-${m.color}-300 transition-colors`}>{m.title}</h3>
+                                    <p className="text-sm text-slate-400 leading-relaxed">{m.desc}</p>
                                 </div>
-                                <h3 className={`text-lg font-bold text-${m.color}-400 mb-1.5 group-hover:text-${m.color}-300 transition-colors`}>{m.title}</h3>
-                                <p className="text-sm text-slate-400 leading-relaxed">{m.desc}</p>
-                            </motion.div>
+                            </ThreeDCard>
                         </Link>
                     ))}
                 </div>
@@ -106,7 +114,7 @@ const Nav = () => {
     ];
 
     return (
-        <nav className="glass-panel mx-6 mt-5 mb-3 px-5 py-3 rounded-full flex justify-between items-center">
+        <nav className="glass-panel mx-6 mt-5 mb-3 px-5 py-3 rounded-full flex justify-between items-center relative z-50">
             <Link to="/" className="font-black text-xl tracking-tight text-white flex items-center gap-2">
                 <span className="bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg p-1 px-2.5 text-slate-900 font-black text-sm shadow-md">AI</span>
                 Placement
@@ -114,7 +122,7 @@ const Nav = () => {
             <div className="flex gap-1 font-medium text-sm text-slate-400 items-center">
                 {navLinks.map(link => (
                     <Link key={link.to} to={link.to}
-                        className={`px-3 py-1.5 rounded-full transition-all ${isActive(link.to) ? 'bg-slate-700 text-white' : 'hover:text-white hover:bg-slate-800'}`}>
+                        className={`px-3 py-1.5 rounded-full transition-all ${isActive(link.to) ? 'bg-slate-700 text-white shadow-lg' : 'hover:text-white hover:bg-slate-800'}`}>
                         {link.label}
                     </Link>
                 ))}
@@ -139,33 +147,30 @@ function App() {
     return (
         <AuthProvider>
             <Router>
-                <div className="bg-[#0f172a] min-h-screen text-slate-100 font-sans selection:bg-cyan-500/30">
-
-                    {/* Background blobs */}
-                    <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/15 blur-[130px]" />
-                        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/15 blur-[130px]" />
-                        <div className="absolute top-[50%] right-[25%] w-[20%] h-[20%] rounded-full bg-purple-600/10 blur-[80px]" />
-                    </div>
+                <div className="bg-[#0f172a] min-h-screen text-slate-100 font-sans selection:bg-cyan-500/30 overflow-x-hidden">
+                    
+                    {/* 3D Background */}
+                    <FloatingBackground />
 
                     <div className="relative z-10 hidden sm:block">
                         <Nav />
                     </div>
 
                     <div className="relative z-10">
-                        <Routes>
-                            <Route path="/" element={<Dashboard />} />
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/register" element={<Register />} />
-                            <Route path="/forgot-password" element={<ForgotPassword />} />
-                            
-                            {/* Private Routes */}
-                            <Route path="/analyze" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
-                            <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
-                            <Route path="/assessment" element={<ProtectedRoute><AssessmentHub /></ProtectedRoute>} />
-                            <Route path="/career" element={<ProtectedRoute><CareerAdvisor /></ProtectedRoute>} />
-                            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                        </Routes>
+                        <AnimatePresence mode="wait">
+                            <Routes>
+                                <Route path="/" element={<Dashboard />} />
+                                <Route path="/login" element={<Login />} />
+                                <Route path="/register" element={<Register />} />
+                                <Route path="/forgot-password" element={<ForgotPassword />} />
+                                
+                                <Route path="/analyze" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
+                                <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
+                                <Route path="/assessment" element={<ProtectedRoute><AssessmentHub /></ProtectedRoute>} />
+                                <Route path="/career" element={<ProtectedRoute><CareerAdvisor /></ProtectedRoute>} />
+                                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                            </Routes>
+                        </AnimatePresence>
                     </div>
                 </div>
             </Router>
