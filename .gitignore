@@ -1,0 +1,31 @@
+# Node
+node_modules/
+dist/
+build/
+.npm
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
+venv/
+.venv/
+env/
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+Pipfile.lock
+poetry.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+uploads/
+backend/uploads/
+*.db
+*.sqlite3
