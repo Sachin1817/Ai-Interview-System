@@ -1,46 +1,43 @@
-# 🤖 AI Interview System
+# 🤖 AI Interview & Placement System
 
-An intelligent, full-stack platform designed to revolutionize the recruitment process through AI-driven interview preparation, resume analysis, and career guidance. This system leverages advanced NLP (Natural Language Processing) and Generative AI to provide personalized feedback and assessment for candidates.
+An intelligent, full-stack platform designed to revolutionize the recruitment process through AI-driven interview preparation, ATS-optimized resume analysis, and automated resume building. This system leverages advanced NLP (Natural Language Processing) and Generative AI to provide personalized feedback and career guidance for candidates.
 
-## 🌟 Features
+## 🌟 Key Features
 
-### 1. **AI-Powered Interview Module**
-- Real-time interview simulation with personalized questions.
-- Dynamic assessment based on candidate responses.
-- Powered by **Google Gemini AI** and **Transformers**.
+### 1. **AI-Powered Resume Analyzer**
+- PDF resume parsing and entity extraction.
+- **Gemini 1.5 Flash** powered deep diagnosis.
+- Compatibility scoring, skill gap detection, and personalized roadmap.
 
-### 2. **Intelligent Resume Analyzer**
-- PDF resume parsing using **PyPDF**.
-- Entity extraction and skill mapping using **SpaCy**.
-- Provides a detailed compatibility score for job roles.
+### 2. **ATS Resume Builder (New Module)**
+- 8-step professional wizard with real-time AI optimization.
+- Generates ATS-friendly PDF resumes using `pdf-lib`.
+- Integration with Node.js backend for high-performance processing.
 
-### 3. **Career Guidance & Path Mapping**
+### 3. **AI Interview Simulation**
+- Real-time interview simulator with personalized question generation.
+- Dynamic assessment and responses powered by **HuggingFace Transformers**.
+
+### 4. **Smart Career Advisor**
 - Analyzes candidate background to suggest optimal career trajectories.
-- Skill gap analysis to help candidates prepare for their target roles.
+- Job role predictions and readiness tracking.
 
-### 4. **Interactive Dashboard**
-- Real-time progress tracking with **Chart.js**.
+### 5. **Interactive Dashboard & Profile**
 - Beautifully animated UI using **Framer Motion**.
-- Secure authentication via **Firebase** and **JWT**.
+- Real-time progress tracking with **Chart.js**.
+- Secure authentication and profile management via **Firebase**.
 
 ---
 
 ## 🛠️ Tech Stack
 
-### **Frontend**
-- **Library**: [React 19](https://reactjs.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
-- **Charts**: [Chart.js](https://www.chartjs.org/)
-- **State/Auth**: Firebase & Context API
-- **Forms**: React Hook Form & Yup
-
-### **Backend**
-- **Framework**: [Flask](https://flask.palletsprojects.com/)
-- **AI/ML**: Google Gemini API, SpaCy, HuggingFace Transformers
-- **Database**: [MongoDB](https://www.mongodb.com/)
-- **Security**: JWT (PyJWT), Flask-CORS
-- **Parsing**: PyPDF
+| Component | Technology |
+| :--- | :--- |
+| **Frontend** | React 19, Tailwind CSS, Framer Motion, Axios |
+| **Python Backend** | Flask, Google Gemini API, Spacy, MongoDB, Flask-APScheduler |
+| **Node Backend** | Node.js, Express, pdf-lib, Firebase Admin |
+| **Database** | MongoDB (Local/Atlas) |
+| **Authentication** | Firebase Auth & JWT |
 
 ---
 
@@ -50,7 +47,7 @@ An intelligent, full-stack platform designed to revolutionize the recruitment pr
 - **Node.js** (v18+)
 - **Python** (3.9+)
 - **MongoDB** (Local or Atlas)
-- **Gemini API Key**
+- **Gemini API Key** (Google AI Studio)
 
 ### **Installation**
 
@@ -60,7 +57,7 @@ git clone https://github.com/Sachin1817/Ai-Interview-System.git
 cd Ai-Interview-System
 ```
 
-#### 2. Backend Setup
+#### 2. Python Backend Setup
 ```bash
 cd backend
 python -m venv venv
@@ -72,16 +69,25 @@ source venv/bin/activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
 ```
-
-Create a `.env` file in the `backend/` folder:
+Create `backend/.env`:
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_key_here
 PORT=5000
-# Add your MongoDB connection if required
-# MONGO_URI=mongodb://localhost:27017/interview_system
+MONGO_URI=mongodb://localhost:27017/ai_placement_db
 ```
 
-#### 3. Frontend Setup
+#### 3. Node Backend Setup
+```bash
+cd ../node-backend
+npm install
+```
+Create `node-backend/.env`:
+```env
+PORT=5001
+# Add Firebase config if required
+```
+
+#### 4. Frontend Setup
 ```bash
 cd ../frontend
 npm install
@@ -91,41 +97,46 @@ npm install
 
 ## 🏃 Running the Application
 
-### **Start Backend**
+To run the full system, you need to start three separate services. It is recommended to run them in separate terminals or use a task runner like `concurrently`.
+
+### **1. Start Python Backend (Interview & AI Analysis)**
 ```bash
 cd backend
 # With venv activated
 python app.py
 ```
-The backend will run on `http://localhost:5000`.
+*Runs on `http://localhost:5000`*
 
-### **Start Frontend**
+### **2. Start Node Backend (Resume Builder)**
+```bash
+cd node-backend
+npm run dev
+```
+*Runs on `http://localhost:5001`*
+
+### **3. Start Frontend (Dashboard)**
 ```bash
 cd frontend
 npm start
 ```
-The frontend will run on `http://localhost:3000`.
+*Runs on `http://localhost:3000`*
 
 ---
 
 ## 📂 Project Structure
 
 ```text
-├── backend/
-│   ├── routes/          # API Endpoints
-│   ├── services/        # AI & Business Logic
-│   ├── models/          # Database Schemas
-│   ├── utils/           # Helper Functions
-│   └── app.py           # Flask Entry Point
-├── frontend/
-│   ├── src/
-│   │   ├── components/  # UI Components
-│   │   ├── contexts/    # Global State
-│   │   ├── pages/       # Route Pages
-│   │   └── services/    # API Integration
-│   └── public/
-├── uploads/             # Resume storage
-└── .gitignore           # Version control exceptions
+├── backend/             # Python Flask API
+│   ├── routes/          # AI & Auth Endpoints
+│   ├── services/        # Gemini & NLP Logic
+│   └── app.py           # Entry Point (Port 5000)
+├── node-backend/        # Node.js ATS Resume API
+│   ├── routes/          # Resume Generation Logic
+│   └── server.js        # Entry Point (Port 5001)
+├── frontend/            # React Client
+│   ├── src/components/  # UI Modules (Resume, Auth, Profile)
+│   └── src/pages/       # Route Views
+└── uploads/             # Global storage directory
 ```
 
 ---
@@ -134,7 +145,7 @@ The frontend will run on `http://localhost:3000`.
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
-This project is licensed under the ISC License - see the `package.json` for details.
+This project is licensed under the ISC License.
 
 ---
-*Developed by [Sachin](https://github.com/Sachin1817)*
+*Developed by [Sachin D](https://github.com/Sachin1817)*
