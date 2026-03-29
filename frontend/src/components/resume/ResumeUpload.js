@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { resumeAPI } from '../../services/api';
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 
 const ResumeUpload = () => {
     const [file, setFile] = useState(null);
@@ -39,9 +39,14 @@ const ResumeUpload = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="glass-panel p-8 rounded-3xl"
             >
-                <h2 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                    Resume Diagnosis Engine
-                </h2>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        Resume Diagnosis Engine
+                    </h2>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                        <Sparkles className="w-3 h-3" /> Powered by Gemini AI
+                    </div>
+                </div>
 
                 {!result ? (
                     <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 p-12 rounded-2xl bg-slate-900/40">

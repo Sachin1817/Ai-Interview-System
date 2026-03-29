@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from services.career_service import get_career_advice
+from services.career_service import get_career_advice, get_job_recommendations, match_job_with_ai
 from utils.auth_helper import token_required
 from utils.db import get_db
 from bson.objectid import ObjectId
@@ -93,3 +93,33 @@ def get_analytics(user_id):
         "best_score": max((h.get("overall_score", 0) for h in interview_history), default=0),
         "latest_score": interview_history[0].get("overall_score", 0) if interview_history else 0,
     }), 200
+
+@career_bp.route('/jobs/recommendations', methods=['POST'])
+def jobs_recommendations():
+    """
+    Public or private route to get job suggestions.
+    """
+    data = request.get_json()
+    branch = data.get("branch", "CSE")
+    role = data.get("role")
+    skills = data.get("skills", [])
+    location = data.get("location") # NEW: User state/location
+    
+    jobs = get_job_recommendations(branch, role, skills, location)
+    return jsonify(jobs), 200
+
+@career_bp.route('/jobs/match', methods=['POST'])
+def job_match():
+    """
+    Trigger AI analysis for a specific job compared to user skills.
+    """
+    data = request.get_json()
+    job = data.get("job")
+    skills = data.get("skills", [])
+    resume_score = data.get("resume_score", 0)
+    
+    if not job:
+        return jsonify({"error": "Job data required"}), 400
+        
+    match_result = match_job_with_ai(job, skills, resume_score)
+    return jsonify(match_result), 200

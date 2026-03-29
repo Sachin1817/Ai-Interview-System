@@ -67,16 +67,90 @@
   backface-visibility: hidden;
 }
 
-.floating-3d {
-  animation: float 6s ease-in-out infinite;
+/* Glassmorphism 2.0 */
+.glass-panel-heavy {
+  @apply bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)];
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(5deg); }
+.section-card {
+  @apply relative overflow-hidden rounded-3xl p-1;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
 }
 
-.tilt-inner {
+.section-card::before {
+  content: '';
+  @apply absolute inset-0 opacity-0 transition-opacity duration-500 rounded-3xl;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(34,211,238,0.15) 0%, transparent 70%);
+}
+
+.section-card:hover::before {
+  @apply opacity-100;
+}
+
+/* Animated Background Blobs */
+.blob {
+  @apply absolute w-64 h-64 rounded-full blur-[100px] opacity-20 animate-pulse pointer-events-none;
+}
+
+.blob-1 { @apply bg-cyan-500 top-20 left-10; animation-duration: 8s; }
+.blob-2 { @apply bg-purple-600 bottom-20 right-10; animation-duration: 10s; }
+.blob-3 { @apply bg-blue-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2; animation-duration: 12s; }
+
+/* Typography */
+.section-heading {
+  @apply text-sm font-black tracking-[0.2em] uppercase text-slate-500 mb-6 flex items-center gap-4;
+}
+
+.section-heading::after {
+  content: '';
+  @apply h-px flex-1 bg-gradient-to-r from-slate-700 to-transparent;
+}
+
+/* 3D and Motion */
+.hover-glow {
+  @apply transition-all duration-300;
+}
+
+.hover-glow:hover {
+  @apply shadow-[0_0_30px_rgba(34,211,238,0.2)] border-cyan-500/50;
+}
+
+/* Premium Shine Effect */
+@keyframes shine-sweep {
+  0% { left: -100%; top: -100%; opacity: 0; }
+  20% { opacity: 0.15; }
+  80% { opacity: 0.15; }
+  100% { left: 200%; top: 200%; opacity: 0; }
+}
+
+.shine-effect {
+  @apply absolute inset-0 pointer-events-none overflow-hidden rounded-[2rem];
+}
+
+.shine-effect::after {
+  content: '';
+  @apply absolute w-[200%] h-[500%] rotate-[45deg] bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  animation: none;
+}
+
+.group:hover .shine-effect::after {
+  animation: shine-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Floating Icon */
+.float-up {
+  @apply transition-transform duration-500;
+}
+
+.group:hover .float-up {
+  transform: translateZ(100px) translateY(-10px);
+}
+
+.lift-content {
+  @apply transition-transform duration-500;
+}
+
+.group:hover .lift-content {
   transform: translateZ(50px);
 }
 

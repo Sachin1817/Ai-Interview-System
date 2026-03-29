@@ -1,8 +1,11 @@
-"""
-AI Career Advisor Service
-Generates personalized career roadmaps, project ideas, and internship advice
-based on the student's branch, detected skills, and assessment scores.
-"""
+from .question_bank import QUESTION_BANK
+from utils.db import get_db
+import json
+import google.generativeai as genai
+import datetime
+
+db = get_db()
+jobs_col = db['jobs']
 
 # Role-to-skill mapping for gap analysis per branch
 BRANCH_CAREER_MAP = {
@@ -233,3 +236,115 @@ def get_career_advice(branch, skills, assessment_score=None):
         "free_resources": resources.get("free", []),
         "paid_resources": resources.get("paid", []),
     }
+
+def get_job_recommendations(branch, role=None, user_skills=None, location=None):
+    """
+    Fetch relevant job opportunities from the database with location prioritization.
+    Filters for verified active status and future deadlines.
+    """
+    today = datetime.date.today().isoformat()
+    
+    # 1. Base Query: Only active and future deadlines
+    query = {
+        "status": {"$ne": "expired"},
+        "deadline": {"$gte": today}
+    }
+
+    if role:
+        query["role"] = {"$regex": role, "$options": "i"}
+    elif branch:
+        query["title"] = {"$regex": branch, "$options": "i"}
+
+    # Fetch all relevant jobs
+    all_jobs = list(jobs_col.find(query))
+    
+    # 2. Prioritize: State match first, then rest
+    def sort_score(job):
+        score = 0
+        if location:
+            # Simple state-level match (e.g., "Bangalore, India" matches "Karnataka")
+            # Improved: check if state name (user location) is in job location
+            if location.lower() in job.get("location", "").lower():
+                score += 100
+        
+        # Closing soon priority (next 48h)
+        deadline = job.get("deadline", "")
+        if deadline:
+            try:
+                days_left = (datetime.date.fromisoformat(deadline) - datetime.date.today()).days
+                if days_left <= 2:
+                    score += 50
+            except:
+                pass
+        return score
+
+    all_jobs.sort(key=sort_score, reverse=True)
+    
+    # If no specific matches, get general active ones
+    if not all_jobs:
+        all_jobs = list(jobs_col.find({"deadline": {"$gte": today}}).limit(10))
+
+    # Format for frontend
+    for j in all_jobs:
+        j["_id"] = str(j["_id"])
+        # Add deadline status
+        try:
+            days_left = (datetime.date.fromisoformat(j["deadline"]) - datetime.date.today()).days
+            j["is_closing_soon"] = days_left <= 2
+            j["days_remaining"] = days_left
+        except:
+            j["is_closing_soon"] = False
+    
+    return all_jobs[:8]
+
+def match_job_with_ai(job, user_skills, resume_score=0):
+    """
+    Use Gemini AI to calculate match score and provide tailored advice for a specific job.
+    """
+    try:
+        prompt = f"""
+        You are an AI Career Matcher.
+        Compare this User Profile to the Job Requirement and calculate a match score.
+        
+        USER PROFILE:
+        - Skills: {', '.join(user_skills or ['General Engineering skills'])}
+        - Resume ATS Score: {resume_score}/100
+        
+        JOB REQUIREMENT:
+        - Title: {job.get('title')}
+        - Company: {job.get('company')}
+        - Required Skills: {', '.join(job.get('skills', []))}
+        - Description: {job.get('description')}
+        
+        Output MUST be pure JSON with these keys:
+        - match_score: (Integer 0-100)
+        - why_match: (String, 1-2 points why they fit)
+        - missing_skills: (Array of strings)
+        - improvement_advice: (String, 1 specific action to take)
+        """
+        
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
+        
+        raw_text = response.text.strip()
+        if "```json" in raw_text:
+            raw_text = raw_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in raw_text:
+            raw_text = raw_text.split("```")[1].split("```")[0].strip()
+            
+        result = json.loads(raw_text)
+        return result
+    except Exception as e:
+        print(f"Job Matching AI Error: {e}")
+        # Basic fallback matching
+        job_skills = [s.lower() for s in job.get('skills', [])]
+        user_skills_lower = [s.lower() for s in (user_skills or [])]
+        matched = [s for s in job_skills if s in user_skills_lower]
+        score = int((len(matched) / len(job_skills) * 100)) if job_skills else 50
+        
+        return {
+            "match_score": score,
+            "why_match": f"You have {len(matched)} matching skills for this role.",
+            "missing_skills": [s for s in job_skills if s not in user_skills_lower][:3],
+            "improvement_advice": "Focus on building a project using the missing skills."
+        }

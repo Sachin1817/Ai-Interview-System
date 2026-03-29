@@ -83,31 +83,34 @@ def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n
     print(f"DEBUG: Generating {n} interview questions for {branch} - {role} ({difficulty})")
     try:
         prompt = f"""
-        You are an elite technical interviewer at a top-tier global engineering firm.
-        Generate exactly {n} high-quality, professional, and challenging interview questions for a candidate with the following profile:
-        Branch: {branch}
-        Target Role: {role or 'General Engineer'}
-        Difficulty Level: {difficulty}
+        You are an elite technical interviewer at a top-tier global firm (like Google, NVIDIA, or Tesla).
+        Generate exactly {n} high-quality, professional, and detailed interview questions for a candidate with this profile:
+        - Branch: {branch}
+        - Target Role: {role or 'General Engineer'}
+        - Difficulty Level: {difficulty}
         
-        Requirements:
-        1. Mix of deep technical domain questions ({n-1} questions) and one insightful behavioral/HR question.
-        2. Specifically tailor the technical questions to the 'Target Role' provided.
-        3. Ensure the questions probe for both conceptual understanding and practical problem-solving.
-        4. Do NOT provide the same basic questions found on common websites. Make them unique and professional.
+        CRITICAL STYLE REQUIREMENTS:
+        1. NO SHORT QUESTIONS: Every question must be a well-structured paragraph of 3-4 sentences. Provide context, a real-world scenario, or explain why the concept is important before asking the core question.
+        2. ROLE-SPECIFIC TECH: The questions MUST strictly focus on the core technologies and technical competencies required for the '{role}' role. 
+        3. BEGINNER DEPTH: If difficulty is 'Beginner', focus on fundamental principles (e.g., 'How does X work under the hood?') but keep the question text long and explanatory.
+        4. STRUCTURE: 
+           - {n-1} technical/domain-specific questions.
+           - 1 behavioral/situation-based question tailored to the role.
+        5. UNIQUE: Avoid generic questions like 'What is a class?'. Instead, use: 'In the context of scaling a backend for {role}, how would you approach...'.
         
         The output must be pure, valid JSON in the following structure:
         [
             {{
                 "id": "q1",
-                "question": "The question text here?",
-                "topic": "The specific sub-topic (e.g., Virtual Memory, Thermal Stress, etc.)"
+                "question": "The detailed 3-4 sentence question text here?",
+                "topic": "The specific sub-topic (e.g., Memory Leaks in C++, Load Balancing, etc.)"
             }},
             ...
         ]
         Do not output any introductory or concluding text, ONLY the JSON array.
         """
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         
         raw_text = response.text.strip()
@@ -174,7 +177,7 @@ def evaluate_answer_nlp(question, answer, topic):
         overall_score should be a weighted average (Accuracy 40%, Relevance 30%, Completeness 20%, Communication 10%).
         """
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         
         try:

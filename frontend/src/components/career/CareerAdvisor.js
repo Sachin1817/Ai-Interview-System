@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Briefcase, Target, BookOpen, ArrowRight, Star, Zap, Award, Loader2 } from 'lucide-react';
+import { Briefcase, Target, BookOpen, ArrowRight, Star, Zap, Award, Loader2, MapPin, Building2, CheckCircle2, AlertCircle, Sparkles, ChevronDown } from 'lucide-react';
 import api from '../../services/api';
 
 const BRANCHES = ['CSE', 'IT', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Chemical', 'Aerospace'];
@@ -23,7 +23,7 @@ const Ring = ({ value, max = 100, color, size = 80, label }) => {
                     {value}%
                 </span>
             </div>
-            {label && <span className="text-xs text-slate-400 text-center">{label}</span>}
+            {label && <span className="text-[10px] text-slate-500 text-center uppercase font-bold tracking-tight">{label}</span>}
         </div>
     );
 };
@@ -74,10 +74,149 @@ const RoleCard = ({ role, isTop }) => (
     </div>
 );
 
+// ── Job Card Component ──
+const JobCard = ({ job, userSkills, resumeScore }) => {
+    const [matching, setMatching] = useState(false);
+    const [matchResult, setMatchResult] = useState(null);
+    const [expanded, setExpanded] = useState(false);
+
+    const runMatching = async () => {
+        if (matchResult) { setExpanded(!expanded); return; }
+        setMatching(true);
+        try {
+            const res = await api.post('/career/jobs/match', { job, skills: userSkills, resume_score: resumeScore });
+            setMatchResult(res.data);
+            setExpanded(true);
+        } catch (e) {
+            console.error("Match matching error", e);
+        } finally {
+            setMatching(false);
+        }
+    };
+
+    return (
+        <div className="glass-card p-6 rounded-3xl border border-white/5 hover:border-cyan-500/30 transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-3 flex gap-2">
+                {job.is_closing_soon && (
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/20 flex items-center gap-1 animate-pulse">
+                        <AlertCircle className="w-2.5 h-2.5" /> Closing Soon
+                    </span>
+                )}
+                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${job.jobType === 'Internship' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20'}`}>
+                    {job.jobType}
+                </span>
+            </div>
+
+            <div className="flex gap-4 items-start mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-xl shadow-inner border border-white/5">
+                    {job.company.charAt(0)}
+                </div>
+                <div>
+                    <h4 className="font-bold text-white group-hover:text-cyan-300 transition-colors uppercase tracking-tight">{job.title}</h4>
+                    <div className="flex items-center gap-3 mt-1 text-slate-400 text-[10px] font-bold">
+                        <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {job.company}</span>
+                        <span className="flex items-center gap-1 text-cyan-400/80"><MapPin className="w-3 h-3" /> {job.location}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2 mb-4">
+                <div className="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase flex items-center gap-1">
+                    <CheckCircle2 className="w-2.5 h-2.5" /> Verified Active
+                </div>
+                {job.days_remaining !== undefined && (
+                    <div className="text-[9px] font-bold text-slate-500">
+                        Deadline: <span className={job.is_closing_soon ? 'text-red-400' : 'text-slate-300'}>{job.deadline}</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="mb-4">
+                <p className="text-[10px] text-slate-500 uppercase font-bold mb-2 tracking-wider">Required Skills</p>
+                <div className="flex flex-wrap gap-1.5">
+                    {job.skills?.slice(0, 4).map(s => (
+                        <span key={s} className="bg-slate-800/50 text-slate-300 text-[10px] px-2 py-0.5 rounded-lg border border-white/5">{s}</span>
+                    ))}
+                </div>
+            </div>
+
+            {matchResult ? (
+                <div className="mb-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-xs font-bold text-slate-300">Profile Match</span>
+                        <span className="text-xs font-black text-cyan-400">{matchResult.match_score}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${matchResult.match_score}%` }}
+                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                        />
+                    </div>
+                </div>
+            ) : (
+                <button 
+                    onClick={runMatching}
+                    disabled={matching}
+                    className="w-full py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-xs font-bold text-slate-400 hover:text-white hover:border-cyan-500/50 transition-all flex items-center justify-center gap-2 mb-4"
+                >
+                    {matching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-cyan-400" />}
+                    Analyze Match Score
+                </button>
+            )}
+
+            <AnimatePresence>
+                {expanded && matchResult && (
+                    <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden border-t border-white/5 pt-4 mb-4"
+                    >
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-[10px] text-emerald-400 font-bold uppercase mb-1">Why you match</p>
+                                <p className="text-xs text-slate-300 flex items-start gap-2">
+                                    <CheckCircle2 className="w-3 h-3 mt-0.5 text-emerald-500" /> {matchResult.why_match}
+                                </p>
+                            </div>
+                            {matchResult.missing_skills?.length > 0 && (
+                                <div>
+                                    <p className="text-[10px] text-red-400 font-bold uppercase mb-1">Skill Gaps</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {matchResult.missing_skills.map(s => (
+                                            <span key={s} className="text-[10px] text-red-300 bg-red-500/5 px-2 py-0.5 rounded-md border border-red-500/10">{s}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <div className="p-3 bg-cyan-500/5 rounded-xl border border-cyan-500/10">
+                                <p className="text-[10px] text-cyan-400 font-bold uppercase mb-1">AI Advice</p>
+                                <p className="text-xs text-slate-200 italic">"{matchResult.improvement_advice}"</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <a 
+                href={job.applyLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full block text-center py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20"
+            >
+                Apply Now
+            </a>
+        </div>
+    );
+};
+
 // ── Main Component ──
 const CareerAdvisor = () => {
     const [advice, setAdvice] = useState(null);
+    const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadingJobs, setLoadingJobs] = useState(false);
     const [error, setError] = useState('');
     const [branch, setBranch] = useState('CSE');
     const [mode, setMode] = useState('select'); // 'select' | 'result'
@@ -99,17 +238,43 @@ const CareerAdvisor = () => {
             }
             setAdvice(data);
             setMode('result');
+            
+            // Fetch jobs in parallel
+            fetchJobs(data.branch, data.best_role, data.top_roles?.[0]?.matched_skills || []);
+            
         } catch (e) {
             // Fallback: generate locally from branch
             try {
                 const res = await api.post('/career/advice/branch', { branch, skills: [] });
                 setAdvice(res.data);
                 setMode('result');
+                fetchJobs(res.data.branch, res.data.best_role);
             } catch {
                 setError('Could not load advice. Make sure the backend is running.');
             }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchJobs = async (userBranch, userRole, userSkills) => {
+        setLoadingJobs(true);
+        try {
+            // Get user location from local profile info if it exists
+            const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+            const location = userProfile.location || userProfile.state || "";
+
+            const res = await api.post('/career/jobs/recommendations', { 
+                branch: userBranch, 
+                role: userRole,
+                skills: userSkills,
+                location: location 
+            });
+            setJobs(res.data);
+        } catch (e) {
+            console.error("Job fetch error", e);
+        } finally {
+            setLoadingJobs(false);
         }
     };
 
@@ -236,7 +401,7 @@ const CareerAdvisor = () => {
                             </div>
                         )}
 
-                        {/* Internship suggestions */}
+                        {/* Internship roles to target */}
                         {advice.top_roles?.[0]?.internships?.length > 0 && (
                             <div className="glass-card p-6 rounded-2xl">
                                 <h3 className="font-bold text-cyan-400 flex items-center gap-2 mb-4"><Briefcase className="w-4 h-4" />Internship Roles to Target</h3>
@@ -249,6 +414,39 @@ const CareerAdvisor = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* Smart Opportunity Recommendations */}
+                        <div className="pt-8 border-t border-white/5">
+                            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                                <div className="p-2 bg-gradient-to-br from-indigo-400 to-blue-600 rounded-xl shadow-lg shadow-indigo-500/20">
+                                    <Zap className="w-5 h-5 text-slate-950" />
+                                </div>
+                                Current Open Internships and Placements
+                            </h3>
+                            
+                            {loadingJobs ? (
+                                <div className="flex flex-col items-center py-12 gap-3">
+                                    <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                                    <p className="text-slate-500 text-sm">Searching for opportunities...</p>
+                                </div>
+                            ) : jobs.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {jobs.map(job => (
+                                        <JobCard 
+                                            key={job._id} 
+                                            job={job} 
+                                            userSkills={advice.top_roles?.[0]?.matched_skills || []}
+                                            resumeScore={advice.top_roles?.[0]?.match_percentage || 0}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="glass-panel p-12 rounded-3xl text-center border-dashed border-white/10">
+                                    <div className="text-3xl mb-4">🔍</div>
+                                    <p className="text-slate-400">No specific openings found for this role yet. We'll alert you when matching positions open up.</p>
+                                </div>
+                            )}
+                        </div>
 
                         <button onClick={() => setMode('select')}
                             className="text-slate-500 hover:text-slate-300 transition-colors text-sm">

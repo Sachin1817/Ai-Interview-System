@@ -46,7 +46,7 @@ def generate_assessment():
         Do not output any introductory or concluding text, ONLY the JSON array.
         """
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         
         try:
