@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { 
     User, LogOut, ChevronDown, Settings, Mail, UserCircle, Menu, X, 
-    Home, FileText, MessageSquare, ShieldCheck, Compass, BarChart3 
+    Home, FileText, MessageSquare, ShieldCheck, Compass, BarChart3, Code2
 } from 'lucide-react';
 
 // Components
@@ -19,6 +19,7 @@ import AssessmentHub from './components/assessment/AssessmentHub';
 import CareerAdvisor from './components/career/CareerAdvisor';
 import Analytics from './components/analytics/Analytics';
 import ResumeBuilder from './components/resume/ResumeBuilder';
+import CodingInterview from './components/interview/CodingInterview';
 
 // New 3D Components
 import ThreeDCard from './components/layout/ThreeDCard';
@@ -49,6 +50,7 @@ const Dashboard = () => {
             name: "Interactive AI Practice",
             modules: [
                 { title: 'AI Mock Interview', desc: '8 branches · 3 difficulty levels · 60s timer · Voice input.', color: 'blue', href: '/interview', icon: '🤖', badge: 'Live' },
+                { title: 'AI Coding Interview', desc: 'Real-time multi-language execution · AI feedback · Role-based.', color: 'cyan', href: '/coding-interview', icon: '💻', badge: 'New Module' },
                 { title: 'Assessment Hub', desc: 'MCQs: Python, Java, DBMS, Aptitude, Grammar · 30s timer.', color: 'purple', href: '/assessment', icon: '📝', badge: '70+ Questions' },
             ]
         },
@@ -232,6 +234,7 @@ const Nav = () => {
         { to: '/resume-builder', label: 'Builder', icon: <FileText className="w-5 h-5" /> },
         { to: '/analyze', label: 'Analyzer', icon: <FileText className="w-5 h-5" /> },
         { to: '/interview', label: 'Interview', icon: <MessageSquare className="w-5 h-5" /> },
+        { to: '/coding-interview', label: 'Coding', icon: <Code2 className="w-5 h-5" /> },
         { to: '/assessment', label: 'Assess', icon: <ShieldCheck className="w-5 h-5" /> },
         { to: '/career', label: 'Career', icon: <Compass className="w-5 h-5" /> },
         { to: '/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> }
@@ -429,6 +432,7 @@ function App() {
                                     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                                     <Route path="/analyze" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
                                     <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
+                                    <Route path="/coding-interview" element={<ProtectedRoute><CodingInterview /></ProtectedRoute>} />
                                     <Route path="/assessment" element={<ProtectedRoute><AssessmentHub /></ProtectedRoute>} />
                                     <Route path="/career" element={<ProtectedRoute><CareerAdvisor /></ProtectedRoute>} />
                                     <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />

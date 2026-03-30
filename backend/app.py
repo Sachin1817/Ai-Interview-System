@@ -11,6 +11,7 @@ from routes.resume import resume_bp
 from routes.interview import interview_bp
 from routes.career import career_bp
 from routes.assessment import assessment_bp
+from routes.coding import coding_bp
 from flask_apscheduler import APScheduler
 import datetime
 
@@ -23,6 +24,7 @@ app.register_blueprint(resume_bp, url_prefix='/api/resume')
 app.register_blueprint(interview_bp, url_prefix='/api/interview')
 app.register_blueprint(career_bp, url_prefix='/api/career')
 app.register_blueprint(assessment_bp, url_prefix='/api/assessment')
+app.register_blueprint(coding_bp, url_prefix='/api/coding')
 
 # ─── Scheduler ───
 scheduler = APScheduler()

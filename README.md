@@ -22,7 +22,13 @@ An intelligent, multi-service platform designed to revolutionize the career jour
 - **Dynamic Questioner**: Real-time interview simulator with role-specific technical question generation.
 - **Live Assessment**: Immediate feedback on responses with automated scoring.
 
-### 4. **Smart Dashboard & Profile**
+### 4. **AI Coding Interview Engine (New)**
+- **Dynamic AI Generation**: Uses **Groq AI** to generate unique coding challenges based on the selected role.
+- **Difficulty Selection**: Support for **Easy, Medium, and Hard** difficulty levels to match candidate seniority.
+- **Universal Code Execution**: Real-time execution support for **Python, JavaScript, Java, C++, and Bash** with security timeouts.
+- **Automated AI Grading**: Detailed performance reports analyzing code quality, logic, and efficiency.
+
+### 5. **Smart Dashboard & Profile**
 - **Animated Experience**: Fluid, premium UI built with **Framer Motion** and **Tailwind CSS**.
 - **Data-Driven Tracking**: Visualize your preparation progress with **Chart.js**.
 - **Secure Management**: Authentication and centralized profile storage via **Firebase**.
@@ -40,8 +46,9 @@ An intelligent, multi-service platform designed to revolutionize the career jour
 ### **Python Backend (AI & Interview Logic)**
 - **Flask**: Micro-framework handling career mentoring and interview assessment.
 - **Groq Cloud SDK**: Powering all conversational AI and deep analysis.
+- **Execution Service**: Custom isolated subprocess-based runner for multi-language code assessment.
 - **Spacy**: Natural Language Processing for resume text parsing.
-- **MongoDB**: For storing career tracking data and progress.
+- **MongoDB**: For storing career tracking data, coding submissions, and progress.
 
 ### **Node.js Backend (Resume & PDF Logic)**
 - **Express**: High-performance API for resume building and analytics.
@@ -113,10 +120,10 @@ To run the complete system, start the following in separate terminals:
 ## 📂 Architecture Overview
 ```text
 ├── frontend/             # High-End React Interface
-│   └── src/components/   # Modular Career Mentor, Resume Hub & Interviews
+│   └── src/components/   # Modular Career Mentor, Resume Hub, Interviews & Coding
 ├── backend/              # Python AI & Mentoring Services
-│   ├── services/         # Groq AI Orchestration (Llama 3.3/3.1)
-│   └── routes/           # Interactive Career & Assessment Endpoints
+│   ├── services/         # Groq AI Orchestration, Execution Engine (Code Runner)
+│   └── routes/           # Interactive Career, Coding & Assessment Endpoints
 └── node-backend/         # Node.js Resume & Document Processing
     └── routes/          # AI Resume Analysis & PDF Generation
 ```
