@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Briefcase, Target, BookOpen, ArrowRight, Star, Zap, Award, Loader2, MapPin, Building2, CheckCircle2, AlertCircle, Sparkles, ChevronDown } from 'lucide-react';
 import api from '../../services/api';
+import CareerChatbot from './CareerChatbot';
 
 const BRANCHES = ['CSE', 'IT', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Chemical', 'Aerospace'];
 
@@ -357,7 +358,7 @@ const CareerAdvisor = () => {
                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-black text-white shadow-lg shadow-purple-500/20">
                                             {i + 1}
                                         </div>
-                                        <p className="text-slate-300 text-sm leading-relaxed mt-1">{step}</p>
+                                        <p className="text-slate-300 text-sm leading-relaxed mt-1 font-medium">{step}</p>
                                     </div>
                                 ))}
                             </div>
@@ -449,7 +450,7 @@ const CareerAdvisor = () => {
                         </div>
 
                         <button onClick={() => setMode('select')}
-                            className="text-slate-500 hover:text-slate-300 transition-colors text-sm">
+                            className="text-slate-500 hover:text-slate-300 transition-colors text-sm mt-8 block">
                             ← Try a different branch
                         </button>
                     </motion.div>

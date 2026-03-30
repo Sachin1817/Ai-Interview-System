@@ -2,13 +2,39 @@ import random
 import datetime
 import os
 import json
-import google.generativeai as genai
+from .ai_service import generate_ai_response
 from .question_bank import QUESTION_BANK, COMMON_QUESTIONS
 
-# Configure Gemini
-api_key = os.getenv("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
+# genai configuration removed, handled by ai_service
+
+def _clean_json_response(raw_text):
+    """Utility to extract JSON from model response that may contain markdown or extra text."""
+    try:
+        # 1. Clean up whitespace and find the JSON structure
+        raw_text = raw_text.strip()
+        
+        # 2. Try to find JSON array or object
+        start_arr = raw_text.find('[')
+        start_obj = raw_text.find('{')
+        
+        # Determine which one appears first (if both exist) or only one
+        if start_arr != -1 and (start_obj == -1 or start_arr < start_obj):
+            start = start_arr
+            end = raw_text.rfind(']')
+        elif start_obj != -1:
+            start = start_obj
+            end = raw_text.rfind('}')
+        else:
+            return json.loads(raw_text) # Fallback to original
+            
+        if start != -1 and end != -1:
+            json_str = raw_text[start:end+1]
+            return json.loads(json_str)
+            
+        return json.loads(raw_text)
+    except Exception as e:
+        print(f"JSON Parsing Error: {e}")
+        return None
 
 
 
@@ -81,6 +107,9 @@ def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n
     Generate n unique interview questions using Gemini AI.
     """
     print(f"DEBUG: Generating {n} interview questions for {branch} - {role} ({difficulty})")
+    # Generate a unique seed for this session to ensure randomness
+    random_seed = f"{datetime.datetime.now().timestamp()}_{branch}_{role}"
+    
     try:
         prompt = f"""
         You are an elite technical interviewer at a top-tier global firm (like Google, NVIDIA, or Tesla).
@@ -88,39 +117,37 @@ def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n
         - Branch: {branch}
         - Target Role: {role or 'General Engineer'}
         - Difficulty Level: {difficulty}
+        - RANDOMNESS_SEED: {random_seed} (USE THIS TO ENSURE TRULY UNIQUE QUESTIONS)
         
-        CRITICAL STYLE REQUIREMENTS:
-        1. NO SHORT QUESTIONS: Every question must be a well-structured paragraph of 3-4 sentences. Provide context, a real-world scenario, or explain why the concept is important before asking the core question.
-        2. ROLE-SPECIFIC TECH: The questions MUST strictly focus on the core technologies and technical competencies required for the '{role}' role. 
-        3. BEGINNER DEPTH: If difficulty is 'Beginner', focus on fundamental principles (e.g., 'How does X work under the hood?') but keep the question text long and explanatory.
+        CRITICAL STYLE REQUIREMENTS (NON-NEGOTIABLE):
+        1. INFINITE VARIETY: Do NOT repeat common, cliché, or frequently asked questions. Every question must be uniquely tailored to the specific intersection of '{branch}' and '{role}'.
+        2. NO SHORT QUESTIONS: Every question must be a well-structured paragraph of 3-4 sentences. Provide real-world context, a specific engineering scenario, or explain the critical importance of a concept before asking the question.
+        3. ROLE-DEEP-DIVE: The questions MUST strictly focus on the deep technical competencies of a '{role}'. 
+           Ex: For a Full Stack Developer, don't just ask about HTML. Ask about state management performance in large-scale React apps or database indexing strategies for real-time systems.
         4. STRUCTURE: 
            - {n-1} technical/domain-specific questions.
-           - 1 behavioral/situation-based question tailored to the role.
-        5. UNIQUE: Avoid generic questions like 'What is a class?'. Instead, use: 'In the context of scaling a backend for {role}, how would you approach...'.
+           - 1 complex behavioral/situation-based question tailored specifically to the '{role}' job environment.
+        5. LEVEL APPROPRIATE: Maintain '{difficulty}' level depth but always with professional, long-form phrasing.
         
         The output must be pure, valid JSON in the following structure:
         [
             {{
                 "id": "q1",
                 "question": "The detailed 3-4 sentence question text here?",
-                "topic": "The specific sub-topic (e.g., Memory Leaks in C++, Load Balancing, etc.)"
+                "topic": "The specific sub-topic"
             }},
             ...
         ]
         Do not output any introductory or concluding text, ONLY the JSON array.
         """
         
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content(prompt)
+        raw_text = generate_ai_response(prompt)
+        if not raw_text:
+             raise ValueError("AI Service failed to generate interview questions")
         
-        raw_text = response.text.strip()
-        # Clean potential markdown
-        if "```json" in raw_text:
-            raw_text = raw_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in raw_text:
-            raw_text = raw_text.split("```")[1].split("```")[0].strip()
-            
-        questions = json.loads(raw_text)
+        questions = _clean_json_response(raw_text)
+        if not questions:
+            raise ValueError(f"Failed to parse AI response as JSON. Raw text: {raw_text}")
         
         # Ensure ID uniqueness and format
         for i, q in enumerate(questions):
@@ -177,18 +204,14 @@ def evaluate_answer_nlp(question, answer, topic):
         overall_score should be a weighted average (Accuracy 40%, Relevance 30%, Completeness 20%, Communication 10%).
         """
         
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content(prompt)
+        raw_text = generate_ai_response(prompt)
+        if not raw_text:
+             raise ValueError("AI Service failed to evaluate answer")
         
         try:
-            raw_text = response.text.strip()
-            # Clean potential markdown
-            if "```json" in raw_text:
-                raw_text = raw_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in raw_text:
-                raw_text = raw_text.split("```")[1].split("```")[0].strip()
-                
-            result = json.loads(raw_text)
+            result = _clean_json_response(raw_text)
+            if not result:
+                raise ValueError("Could not extract JSON from AI response")
             # Sanitize: ensure all scores are floats and within 0-10
             for key in ["technical_score", "relevance_score", "completeness_score", "communication_score", "confidence_score", "overall_score"]:
                 try:

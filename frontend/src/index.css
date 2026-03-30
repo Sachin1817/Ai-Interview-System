@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-900 text-slate-100 antialiased;
+    @apply bg-light-bg dark:bg-dark-bg text-light-text dark:text-slate-100 antialiased transition-colors duration-300;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
@@ -26,11 +26,11 @@
 
 /* Glassmorphism Utilities */
 .glass-panel {
-  @apply bg-slate-800/40 backdrop-blur-md border border-slate-700/50 shadow-xl;
+  @apply bg-white/70 dark:bg-slate-800/40 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 shadow-xl transition-all duration-300;
 }
 
 .glass-card {
-  @apply bg-slate-800/60 backdrop-blur-sm border border-slate-600/30 shadow-lg hover:shadow-cyan-500/10 transition-all duration-300;
+  @apply bg-white/80 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200 dark:border-slate-600/30 shadow-lg hover:shadow-accent/10 dark:hover:shadow-cyan-500/10 transition-all duration-300;
 }
 
 /* Light Mode / Professional Blue-White Theme */

@@ -1,15 +1,41 @@
 from flask import Blueprint, request, jsonify
-import google.generativeai as genai
+from services.ai_service import generate_ai_response
 import os
 import json
 import uuid
 
+def _clean_json_response(raw_text):
+    """Utility to extract JSON from model response that may contain markdown or extra text."""
+    try:
+        # 1. Clean up whitespace and find the JSON structure
+        raw_text = raw_text.strip()
+        
+        # 2. Try to find JSON array or object
+        start_arr = raw_text.find('[')
+        start_obj = raw_text.find('{')
+        
+        # Determine which one appears first (if both exist) or only one
+        if start_arr != -1 and (start_obj == -1 or start_arr < start_obj):
+            start = start_arr
+            end = raw_text.rfind(']')
+        elif start_obj != -1:
+            start = start_obj
+            end = raw_text.rfind('}')
+        else:
+            return json.loads(raw_text) # Fallback to original
+            
+        if start != -1 and end != -1:
+            json_str = raw_text[start:end+1]
+            return json.loads(json_str)
+            
+        return json.loads(raw_text)
+    except Exception as e:
+        print(f"JSON Parsing Error: {e}")
+        return None
+
 assessment_bp = Blueprint('assessment', __name__)
 
-# Configure Gemini
-api_key = os.getenv("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
+# genai configuration removed, handled by gemini_service
 
 @assessment_bp.route('/generate', methods=['POST'])
 def generate_assessment():
@@ -46,33 +72,28 @@ def generate_assessment():
         Do not output any introductory or concluding text, ONLY the JSON array.
         """
         
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content(prompt)
+        raw_text_raw = generate_ai_response(prompt)
+        if not raw_text_raw:
+             raise ValueError("Gemini failed to generate assessment")
         
         try:
-            # Strip potential markdown formatting if model disobeys
-            raw_text = response.text.strip()
-            if raw_text.startswith("```json"):
-                raw_text = raw_text[7:]
-            if raw_text.startswith("```"):
-                raw_text = raw_text[3:]
-            if raw_text.endswith("```"):
-                raw_text = raw_text[:-3]
-                
-            questions = json.loads(raw_text.strip())
+            questions = _clean_json_response(raw_text_raw)
+            if not questions:
+                raise ValueError("Could not extract valid JSON from AI response")
             
             # Append unique IDs
             for i, q in enumerate(questions):
                 q['id'] = f"ai_{uuid.uuid4().hex[:8]}"
                 
-            if len(questions) != 10:
-                print(f"Warning: Gemini returned {len(questions)} questions instead of 10.")
+            # Validate counts
+            if len(questions) < 10:
+                print(f"Warning: Groq returned {len(questions)} questions instead of 10.")
                 
             return jsonify({"status": "success", "questions": questions}), 200
             
         except json.JSONDecodeError as je:
             print("JSON Decode Error:", je)
-            print("Raw text:", response.text)
+            print("Raw text:", raw_text_raw)
             return jsonify({"status": "error", "message": "AI returned malformed JSON"}), 500
             
     except Exception as e:

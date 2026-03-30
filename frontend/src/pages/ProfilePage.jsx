@@ -150,7 +150,7 @@ const ProfilePage = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-8 py-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 font-bold hover:bg-slate-700 transition-all hover:border-slate-500 active:scale-95"
+                  className="px-8 py-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all hover:border-slate-300 dark:hover:border-slate-500 active:scale-95"
                 >
                   Cancel
                 </button>
@@ -166,7 +166,7 @@ const ProfilePage = () => {
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="px-12 py-3.5 rounded-2xl bg-slate-800 border border-slate-600 text-cyan-400 font-black flex items-center gap-2 hover:border-cyan-500/50 hover:bg-slate-700 transition-all shadow-xl active:scale-95"
+                className="px-12 py-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-accent dark:text-cyan-400 font-black flex items-center gap-2 hover:border-accent/50 dark:hover:border-cyan-500/50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-xl active:scale-95"
               >
                 <Edit3 size={20} /> Edit Profile
               </button>

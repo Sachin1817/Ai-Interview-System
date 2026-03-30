@@ -15,6 +15,7 @@ const GoogleIcon = () => (
 );
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const schema = yup.object({
     email: yup.string().email('Invalid email').required('Email is required'),
@@ -29,6 +30,7 @@ const Login = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const { login, loginWithGoogle } = useAuth();
+    const { theme } = useTheme();
     const navigate = useNavigate();
 
     const onSubmit = async (data) => {
@@ -74,33 +76,25 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4" style={{background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)'}}>
+        <div className="min-h-screen flex items-center justify-center p-4 bg-light-bg dark:bg-dark-bg transition-colors duration-300">
             {/* Ambient glows */}
-            <div className="fixed top-[-10%] left-[-5%] w-80 h-80 rounded-full opacity-20 pointer-events-none" style={{background: 'radial-gradient(circle, #38bdf8, transparent)'}}/>
-            <div className="fixed bottom-[-10%] right-[-5%] w-96 h-96 rounded-full opacity-15 pointer-events-none" style={{background: 'radial-gradient(circle, #818cf8, transparent)'}}/>
+            <div className="fixed top-[-10%] left-[-5%] w-80 h-80 rounded-full opacity-20 pointer-events-none bg-accent dark:bg-cyan-400 blur-[100px]"/>
+            <div className="fixed bottom-[-10%] right-[-5%] w-96 h-96 rounded-full opacity-15 pointer-events-none bg-blue-500 dark:bg-indigo-500 blur-[100px]"/>
 
             <motion.div
                 initial={{ opacity: 0, y: 24, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.45 }}
-                className="relative w-full max-w-md z-10"
-                style={{
-                    background: 'rgba(15, 23, 42, 0.75)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(96, 165, 250, 0.15)',
-                    borderRadius: '1.75rem',
-                    boxShadow: '0 25px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-                    padding: '2.5rem'
-                }}
+                className="relative w-full max-w-md z-10 glass-panel p-10 rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-2xl transition-all duration-300"
             >
                 {/* Header */}
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center gap-2 mb-5">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-slate-900 text-sm shadow-lg" style={{background: 'linear-gradient(135deg, #38bdf8, #818cf8)'}}>AI</div>
-                        <span className="text-white font-bold text-lg tracking-tight">Interview System</span>
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white dark:text-slate-900 text-sm shadow-lg bg-gradient-to-br from-cyan-400 to-blue-600">AI</div>
+                        <span className="text-light-text dark:text-white font-bold text-lg tracking-tight">Interview System</span>
                     </div>
-                    <h2 className="text-3xl font-black text-white mb-2">Welcome Back</h2>
-                    <p className="text-slate-400 text-sm">Sign in to continue your AI journey</p>
+                    <h2 className="text-3xl font-black text-light-text dark:text-white mb-2">Welcome Back</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Sign in to continue your AI journey</p>
                 </div>
 
                 {/* Error */}
@@ -115,60 +109,53 @@ const Login = () => {
                 {/* Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{color: '#94a3b8'}}>Email Address</label>
+                        <label className="block text-xs font-bold uppercase tracking-widest mb-2 text-slate-500 dark:text-slate-400">Email Address</label>
                         <input
                             {...register('email')}
-                            className="w-full rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-all"
-                            style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(96,165,250,0.2)', color: 'white'}}
-                            onFocus={e => e.target.style.border = '1px solid rgba(96,165,250,0.6)'}
-                            onBlur={e => e.target.style.border = '1px solid rgba(96,165,250,0.2)'}
+                            className="w-full rounded-xl px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-light-text dark:text-white text-sm focus:outline-none focus:border-accent dark:focus:border-cyan-500 transition-all font-medium"
                             placeholder="name@example.com"
                         />
-                        {errors.email && <p className="text-red-400 text-[10px] mt-1 ml-1 font-semibold">{errors.email.message}</p>}
+                        {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1 font-semibold">{errors.email.message}</p>}
                     </div>
 
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <label className="block text-xs font-bold uppercase tracking-widest" style={{color: '#94a3b8'}}>Password</label>
-                            <Link to="/forgot-password" className="text-xs font-bold" style={{color: '#60a5fa'}}>Forgot?</Link>
+                            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Password</label>
+                            <Link to="/forgot-password" title="Forgot Password" className="text-xs font-bold text-accent dark:text-blue-400 hover:underline">Forgot?</Link>
                         </div>
                         <input
                             type="password"
                             {...register('password')}
-                            className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none transition-all"
-                            style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(96,165,250,0.2)', color: 'white'}}
-                            onFocus={e => e.target.style.border = '1px solid rgba(96,165,250,0.6)'}
-                            onBlur={e => e.target.style.border = '1px solid rgba(96,165,250,0.2)'}
+                            className="w-full rounded-xl px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-light-text dark:text-white text-sm focus:outline-none focus:border-accent dark:focus:border-cyan-500 transition-all font-medium"
                             placeholder="••••••••"
                         />
-                        {errors.password && <p className="text-red-400 text-[10px] mt-1 ml-1 font-semibold">{errors.password.message}</p>}
+                        {errors.password && <p className="text-red-500 text-[10px] mt-1 ml-1 font-semibold">{errors.password.message}</p>}
                     </div>
 
                     <button type="submit" disabled={loading}
-                        className="w-full font-bold py-3.5 rounded-xl text-slate-900 active:scale-95 transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
-                        style={{background: 'linear-gradient(135deg, #38bdf8, #818cf8)', boxShadow: '0 8px 24px rgba(56,189,248,0.25)'}}>
-                        {loading ? <div className="w-5 h-5 border-2 border-slate-700/30 border-t-slate-900 rounded-full animate-spin"></div> : '✦ Sign In'}
+                        className="w-full font-bold py-3.5 rounded-xl text-white dark:text-slate-900 active:scale-95 transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-50 bg-gradient-to-r from-accent to-blue-600 shadow-lg shadow-accent/20 dark:from-cyan-500 dark:to-blue-600 dark:shadow-cyan-500/20"
+                    >
+                        {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : '✦ Sign In'}
                     </button>
                 </form>
 
                 {/* Divider */}
                 <div className="relative my-7">
-                    <div className="absolute inset-0 flex items-center"><span className="w-full" style={{borderTop: '1px solid rgba(255,255,255,0.08)'}}></span></div>
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200 dark:border-white/5"></span></div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="px-3 text-slate-500 font-medium" style={{background: 'rgba(15,23,42,0.75)'}}>Or continue with</span>
+                        <span className="px-3 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 font-bold">Or continue with</span>
                     </div>
                 </div>
 
                 {/* Google Button */}
                 <button onClick={handleGoogleLogin} disabled={loading}
-                    className="w-full font-semibold py-3 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-3"
-                    style={{background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0'}}>
+                    className="w-full font-semibold py-3 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-light-text dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10">
                     <GoogleIcon />
                     Sign in with Google
                 </button>
 
-                <p className="text-center mt-8 text-sm" style={{color: '#64748b'}}>
-                    Don't have an account? <Link to="/register" className="font-bold hover:underline" style={{color: '#60a5fa'}}>Create one free</Link>
+                <p className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400">
+                    Don't have an account? <Link to="/register" className="font-bold text-accent dark:text-blue-400 hover:underline">Create one free</Link>
                 </p>
             </motion.div>
         </div>

@@ -1,43 +1,53 @@
-# 🤖 AI Interview & Placement System
+# 🤖 AI Career Pro: Unified Interview & Mentor System
 
-An intelligent, full-stack platform designed to revolutionize the recruitment process through AI-driven interview preparation, ATS-optimized resume analysis, and automated resume building. This system leverages advanced NLP (Natural Language Processing) and Generative AI to provide personalized feedback and career guidance for candidates.
-
-## 🌟 Key Features
-
-### 1. **AI-Powered Resume Analyzer**
-- PDF resume parsing and entity extraction.
-- **Gemini 1.5 Flash** powered deep diagnosis.
-- Compatibility scoring, skill gap detection, and personalized roadmap.
-
-### 2. **ATS Resume Builder (New Module)**
-- 8-step professional wizard with real-time AI optimization.
-- Generates ATS-friendly PDF resumes using `pdf-lib`.
-- Integration with Node.js backend for high-performance processing.
-
-### 3. **AI Interview Simulation**
-- Real-time interview simulator with personalized question generation.
-- Dynamic assessment and responses powered by **HuggingFace Transformers**.
-
-### 4. **Smart Career Advisor**
-- Analyzes candidate background to suggest optimal career trajectories.
-- Job role predictions and readiness tracking.
-
-### 5. **Interactive Dashboard & Profile**
-- Beautifully animated UI using **Framer Motion**.
-- Real-time progress tracking with **Chart.js**.
-- Secure authentication and profile management via **Firebase**.
+An intelligent, multi-service platform designed to revolutionize the career journey through **Groq Cloud AI**. This system integrates high-performance AI-driven interview preparation, ATS-optimized resume analysis, and a global interactive career mentor.
 
 ---
 
-## 🛠️ Tech Stack
+## 🌟 Key Features
 
-| Component | Technology |
-| :--- | :--- |
-| **Frontend** | React 19, Tailwind CSS, Framer Motion, Axios |
-| **Python Backend** | Flask, Google Gemini API, Spacy, MongoDB, Flask-APScheduler |
-| **Node Backend** | Node.js, Express, pdf-lib, Firebase Admin |
-| **Database** | MongoDB (Local/Atlas) |
-| **Authentication** | Firebase Auth & JWT |
+### 1. **Pro-Interactive Career Mentor (New)**
+- **Global Floating Workspace**: Accessible from any page with a professional **600px x 750px** interactive interface.
+- **Multi-Turn Memory**: Built-in conversation logs allow the mentor to remember your history and guide you step-by-step.
+- **High-Clarity Mentoring**: Strictly formatted **points-wise** responses with emojis and double-spacing for maximum readability.
+- **Interactive Methodology**: The AI doesn't just talk—it asks follow-up questions to understand your goals.
+
+### 2. **Groq-Powered Resume Hub**
+- **Deep Analysis**: Near-instant resume diagnosis powered by **Llama 3.3-70b** via Groq Cloud.
+- **ATS Optimizer**: Realistic compatibility scoring, skill gap detection, and keyword suggestions.
+- **Pro Resume Builder**: 8-step wizard with real-time AI-enhanced project descriptions and professional summaries.
+- **PDF Generation**: High-fidelity, ATS-friendly PDF exports using `pdf-lib`.
+
+### 3. **AI Interview Simulation**
+- **Dynamic Questioner**: Real-time interview simulator with role-specific technical question generation.
+- **Live Assessment**: Immediate feedback on responses with automated scoring.
+
+### 4. **Smart Dashboard & Profile**
+- **Animated Experience**: Fluid, premium UI built with **Framer Motion** and **Tailwind CSS**.
+- **Data-Driven Tracking**: Visualize your preparation progress with **Chart.js**.
+- **Secure Management**: Authentication and centralized profile storage via **Firebase**.
+
+---
+
+## 🛠️ Unified Tech Stack
+
+### **Frontend (The Interface)**
+- **React 19**: Modern component-based architecture.
+- **Tailwind CSS**: Utility-first styling for high-performance glassmorphism designs.
+- **Framer Motion**: Smooth, premium animations and page transitions.
+- **Lucide Icons**: Consistent, modern iconography.
+
+### **Python Backend (AI & Interview Logic)**
+- **Flask**: Micro-framework handling career mentoring and interview assessment.
+- **Groq Cloud SDK**: Powering all conversational AI and deep analysis.
+- **Spacy**: Natural Language Processing for resume text parsing.
+- **MongoDB**: For storing career tracking data and progress.
+
+### **Node.js Backend (Resume & PDF Logic)**
+- **Express**: High-performance API for resume building and analytics.
+- **Groq Node SDK**: Real-time AI enhancements for resumes.
+- **pdf-lib**: Client-side and server-side PDF manipulation.
+- **Firebase Admin**: Secure authentication verification and storage management.
 
 ---
 
@@ -47,47 +57,42 @@ An intelligent, full-stack platform designed to revolutionize the recruitment pr
 - **Node.js** (v18+)
 - **Python** (3.9+)
 - **MongoDB** (Local or Atlas)
-- **Gemini API Key** (Google AI Studio)
+- **Groq API Key** (Get it at [Groq Console](https://console.groq.com/))
 
-### **Installation**
+### **Installation & Setup**
 
-#### 1. Clone the repository
+#### 1. Clone the Repository
 ```bash
 git clone https://github.com/Sachin1817/Ai-Interview-System.git
 cd Ai-Interview-System
 ```
 
-#### 2. Python Backend Setup
+#### 2. Python Backend (Port 5000)
 ```bash
 cd backend
 python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
+venv\Scripts\activate  # Windows
 pip install -r requirements.txt
-python -m spacy download en_core_web_sm
 ```
 Create `backend/.env`:
 ```env
-GEMINI_API_KEY=your_key_here
+GROQ_API_KEY=your_groq_key_here
 PORT=5000
 MONGO_URI=mongodb://localhost:27017/ai_placement_db
 ```
 
-#### 3. Node Backend Setup
+#### 3. Node.js Backend (Port 5001)
 ```bash
 cd ../node-backend
 npm install
 ```
 Create `node-backend/.env`:
 ```env
+GROQ_API_KEY=your_groq_key_here
 PORT=5001
-# Add Firebase config if required
 ```
 
-#### 4. Frontend Setup
+#### 4. Frontend (Port 3000)
 ```bash
 cd ../frontend
 npm install
@@ -95,57 +100,26 @@ npm install
 
 ---
 
-## 🏃 Running the Application
+## 🏃 Running the Full-Stack Application
 
-To run the full system, you need to start three separate services. It is recommended to run them in separate terminals or use a task runner like `concurrently`.
+To run the complete system, start the following in separate terminals:
 
-### **1. Start Python Backend (Interview & AI Analysis)**
-```bash
-cd backend
-# With venv activated
-python app.py
-```
-*Runs on `http://localhost:5000`*
-
-### **2. Start Node Backend (Resume Builder)**
-```bash
-cd node-backend
-npm run dev
-```
-*Runs on `http://localhost:5001`*
-
-### **3. Start Frontend (Dashboard)**
-```bash
-cd frontend
-npm start
-```
-*Runs on `http://localhost:3000`*
+1. **Python AI Server**: `cd backend && venv\Scripts\activate && python app.py`
+2. **Node Resume Server**: `cd node-backend && npm run dev`
+3. **React Client**: `cd frontend && npm start`
 
 ---
 
-## 📂 Project Structure
-
+## 📂 Architecture Overview
 ```text
-├── backend/             # Python Flask API
-│   ├── routes/          # AI & Auth Endpoints
-│   ├── services/        # Gemini & NLP Logic
-│   └── app.py           # Entry Point (Port 5000)
-├── node-backend/        # Node.js ATS Resume API
-│   ├── routes/          # Resume Generation Logic
-│   └── server.js        # Entry Point (Port 5001)
-├── frontend/            # React Client
-│   ├── src/components/  # UI Modules (Resume, Auth, Profile)
-│   └── src/pages/       # Route Views
-└── uploads/             # Global storage directory
+├── frontend/             # High-End React Interface
+│   └── src/components/   # Modular Career Mentor, Resume Hub & Interviews
+├── backend/              # Python AI & Mentoring Services
+│   ├── services/         # Groq AI Orchestration (Llama 3.3/3.1)
+│   └── routes/           # Interactive Career & Assessment Endpoints
+└── node-backend/         # Node.js Resume & Document Processing
+    └── routes/          # AI Resume Analysis & PDF Generation
 ```
 
 ---
-
-## 🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-This project is licensed under the ISC License.
-
----
-*Developed by [Sachin D](https://github.com/Sachin1817)*
+*Developed by [Sachin D](https://github.com/Sachin1817)* | **Powered by Groq Cloud AI**

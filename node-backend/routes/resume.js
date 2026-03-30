@@ -1,14 +1,11 @@
-const express = require('express');
-const router = express.Router();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Initialize Groq Cloud AI
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // ─── AI ANALYSIS: ATS SCORE & SUGGESTIONS ───
 router.post('/analyze', async (req, res) => {
@@ -29,18 +26,20 @@ router.post('/analyze', async (req, res) => {
             5. missingKeywords (list of technical keywords that should be added)
             6. formattingIssues (any specific suggestions for layout)
             
-            Strictly return ONLY the JSON object.
+            Strictly return ONLY the JSON object. No conversational text.
         `;
 
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        
-        if (!jsonMatch) throw new Error("Could not parse AI response");
-        res.json(JSON.parse(jsonMatch[0]));
+        const completion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: "llama-3.3-70b-versatile",
+            response_format: { type: "json_object" }
+        });
+
+        const responseText = completion.choices[0].message.content;
+        res.json(JSON.parse(responseText));
     } catch (error) {
-        console.error("AI Analysis Error:", error);
-        res.status(500).json({ error: "Failed to analyze resume" });
+        console.error("Groq AI Analysis Error:", error);
+        res.status(500).json({ error: "Failed to analyze resume via Groq" });
     }
 });
 
@@ -52,10 +51,14 @@ router.post('/improve-description', async (req, res) => {
             Rewrite the following project description to be highly professional, result-oriented, and ATS-friendly using strong action verbs. Use 2-3 concise bullet points.
             Original: ${description}
         `;
-        const result = await model.generateContent(prompt);
-        res.json({ improved: result.response.text().trim() });
+        const completion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: "llama-3.3-70b-versatile",
+        });
+        res.json({ improved: completion.choices[0].message.content.trim() });
     } catch (error) {
-        res.status(500).json({ error: "Failed to improve description" });
+        console.error("Groq Improve Error:", error);
+        res.status(500).json({ error: "Failed to improve description via Groq" });
     }
 });
 
@@ -70,10 +73,14 @@ router.post('/generate-summary', async (req, res) => {
             Projects: ${JSON.stringify(projects)}
             Focus on career potential and technical expertise.
         `;
-        const result = await model.generateContent(prompt);
-        res.json({ summary: result.response.text().trim() });
+        const completion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: "llama-3.3-70b-versatile",
+        });
+        res.json({ summary: completion.choices[0].message.content.trim() });
     } catch (error) {
-        res.status(500).json({ error: "Failed to generate summary" });
+        console.error("Groq Summary Error:", error);
+        res.status(500).json({ error: "Failed to generate summary via Groq" });
     }
 });
 

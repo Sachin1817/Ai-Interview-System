@@ -1,8 +1,8 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { 
     User, LogOut, ChevronDown, Settings, Mail, UserCircle, Menu, X, 
     Home, FileText, MessageSquare, ShieldCheck, Compass, BarChart3 
@@ -23,8 +23,10 @@ import ResumeBuilder from './components/resume/ResumeBuilder';
 // New 3D Components
 import ThreeDCard from './components/layout/ThreeDCard';
 import FloatingBackground from './components/layout/FloatingBackground';
+import ThemeToggle from './components/layout/ThemeToggle';
 
 import ProfilePage from './pages/ProfilePage';
+import CareerChatbot from './components/career/CareerChatbot';
 
 // ─── Dashboard ───
 const Dashboard = () => {
@@ -86,7 +88,7 @@ const Dashboard = () => {
                     className="text-center mb-10 md:mb-16"
                 >
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 tracking-tight leading-tight">
-                        <span className="text-white">Hello, </span>
+                        <span className="text-light-text dark:text-white">Hello, </span>
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-sm">
                             {user?.name || 'Student'}!
                         </span>
@@ -98,9 +100,9 @@ const Dashboard = () => {
                             🚀
                         </motion.span>
                     </h1>
-                    <p className="text-slate-400 text-base md:text-lg lg:text-xl font-medium max-w-2xl mx-auto leading-relaxed px-4">
+                    <p className="text-slate-500 dark:text-slate-400 text-base md:text-lg lg:text-xl font-medium max-w-2xl mx-auto leading-relaxed px-4">
                         Your complete AI placement preparation platform. <br className="hidden md:block"/>
-                        <span className="text-cyan-400/80">Select a module below to start your journey.</span>
+                        <span className="text-accent dark:text-cyan-400/80">Select a module below to start your journey.</span>
                     </p>
                 </motion.div>
 
@@ -119,8 +121,7 @@ const Dashboard = () => {
                                     <motion.div key={m.title} variants={itemVariants} className="h-full">
                                         <Link to={m.href} className="block h-full group">
                                             <ThreeDCard className="h-full">
-                                                <div className={`glass-card h-full p-8 rounded-[2rem] border border-white/5 group-hover:border-${m.color}-500/50 transition-all duration-500 relative overflow-hidden bg-slate-900/40 backdrop-blur-xl group-hover:shadow-[0_0_50px_rgba(34,211,238,0.15)]`}>
-                                                    
+                                                <div className={`glass-card h-full p-8 rounded-[2rem] border border-white/5 dark:border-white/5 group-hover:border-${m.color}-500/50 transition-all duration-500 relative overflow-hidden bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl group-hover:shadow-[0_0_50px_rgba(34,211,238,0.15)]`}>
                                                     {/* Premium Shine Effect */}
                                                     <div className="shine-effect" />
 
@@ -129,7 +130,7 @@ const Dashboard = () => {
                                                     
                                                     <div className="relative z-10 h-full flex flex-col">
                                                         <div className="flex items-start justify-between mb-8">
-                                                            <div className="float-up text-4xl bg-slate-950/80 p-5 rounded-2xl shadow-2xl border border-white/10 group-hover:border-cyan-500/30 group-hover:shadow-cyan-500/20 transition-all duration-500">
+                                                            <div className="float-up text-4xl bg-white dark:bg-slate-950/80 p-5 rounded-2xl shadow-2xl border border-slate-100 dark:border-white/10 group-hover:border-cyan-500/30 group-hover:shadow-cyan-500/20 transition-all duration-500">
                                                                 {m.icon}
                                                             </div>
                                                             <span className={`text-[10px] uppercase tracking-[0.2em] bg-${m.color}-500/10 text-${m.color}-400 px-4 py-1.5 rounded-full border border-${m.color}-500/20 font-black shadow-lg`}>
@@ -138,10 +139,10 @@ const Dashboard = () => {
                                                         </div>
                                                         
                                                         <div className="lift-content flex-grow">
-                                                            <h3 className={`text-2xl md:text-3xl font-black text-white mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-${m.color}-400 transition-all duration-500`}>
+                                                            <h3 className={`text-2xl md:text-3xl font-black text-light-text dark:text-white mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-light-text dark:group-hover:from-white group-hover:to-${m.color}-400 transition-all duration-500`}>
                                                                 {m.title}
                                                             </h3>
-                                                            <p className="text-slate-400 leading-relaxed font-medium text-base md:text-lg group-hover:text-slate-200 transition-colors duration-500">
+                                                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium text-base md:text-lg group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors duration-500">
                                                                 {m.desc}
                                                             </p>
                                                         </div>
@@ -158,7 +159,7 @@ const Dashboard = () => {
                                                                 className="group-hover:text-cyan-400"
                                                             >
                                                                 →
-                              </motion.div>
+                                                            </motion.div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -248,18 +249,19 @@ const Nav = () => {
             <div className="flex items-center gap-3">
                 <button 
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="p-2 text-slate-400 hover:text-white transition-colors"
+                    className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
                     {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                 </button>
-                <Link to="/" className="font-black text-lg md:text-xl tracking-tight text-white flex items-center gap-2">
+                <Link to="/" className="font-black text-lg md:text-xl tracking-tight text-light-text dark:text-white flex items-center gap-2">
                     <div className="bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg p-1 px-2 md:px-2.5 text-slate-950 font-black text-xs md:text-sm shadow-lg shadow-cyan-500/20">AI</div>
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Placement</span>
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-light-text dark:from-white to-slate-400">Placement</span>
                 </Link>
             </div>
 
 
             <div className="flex items-center gap-4">
+                <ThemeToggle />
                 {currentUser ? (
                     <div className="relative" ref={dropdownRef}>
                         <button 
@@ -404,38 +406,49 @@ const Nav = () => {
 // ─── App ───
 function App() {
     return (
-        <AuthProvider>
-            <Router>
-                <div className="bg-[#0f172a] min-h-screen text-slate-100 font-sans selection:bg-cyan-500/30 overflow-x-hidden">
-                    
-                    {/* 3D Background */}
-                    <FloatingBackground />
+        <ThemeProvider>
+            <AuthProvider>
+                <Router>
+                    <div className="bg-light-bg dark:bg-dark-bg min-h-screen text-light-text dark:text-slate-100 font-sans selection:bg-cyan-500/30 transition-colors duration-300 overflow-x-hidden">
+                        
+                        {/* 3D Background */}
+                        <FloatingBackground />
 
-                    <div className="relative z-[60]">
-                        <Nav />
+                        <div className="relative z-[60]">
+                            <Nav />
+                        </div>
+
+                        <div className="relative z-10">
+                            <AnimatePresence mode="wait">
+                                <Routes>
+                                    <Route path="/" element={<Dashboard />} />
+                                    <Route path="/login" element={<Login />} />
+                                    <Route path="/register" element={<Register />} />
+                                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                                    
+                                    <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                                    <Route path="/analyze" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
+                                    <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
+                                    <Route path="/assessment" element={<ProtectedRoute><AssessmentHub /></ProtectedRoute>} />
+                                    <Route path="/career" element={<ProtectedRoute><CareerAdvisor /></ProtectedRoute>} />
+                                    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                                    <Route path="/resume-builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+                                </Routes>
+                            </AnimatePresence>
+                        </div>
                     </div>
 
-                    <div className="relative z-10">
-                        <AnimatePresence mode="wait">
-                            <Routes>
-                                <Route path="/" element={<Dashboard />} />
-                                <Route path="/login" element={<Login />} />
-                                <Route path="/register" element={<Register />} />
-                                <Route path="/forgot-password" element={<ForgotPassword />} />
-                                
-                                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                                <Route path="/analyze" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
-                                <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
-                                <Route path="/assessment" element={<ProtectedRoute><AssessmentHub /></ProtectedRoute>} />
-                                <Route path="/career" element={<ProtectedRoute><CareerAdvisor /></ProtectedRoute>} />
-                                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                        <Route path="/resume-builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
-                            </Routes>
-                        </AnimatePresence>
-                    </div>
-                </div>
-            </Router>
-        </AuthProvider>
+                    {/* Global Floating AI Assistant (Red Mark Position) */}
+                    <CareerChatbot 
+                        isInline={false}
+                        context={{
+                            isGlobal: true,
+                            branch: "General"
+                        }}
+                    />
+                </Router>
+            </AuthProvider>
+        </ThemeProvider>
     );
 }
 

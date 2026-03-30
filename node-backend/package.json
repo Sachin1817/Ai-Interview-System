@@ -13,6 +13,7 @@
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
     "firebase-admin": "^12.7.0",
+    "groq-sdk": "^1.1.2",
     "pdf-lib": "^1.17.1"
   },
   "devDependencies": {

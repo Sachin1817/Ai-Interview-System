@@ -1,8 +1,39 @@
 from .question_bank import QUESTION_BANK
 from utils.db import get_db
 import json
-import google.generativeai as genai
+from .ai_service import generate_ai_response
 import datetime
+
+def _clean_json_response(raw_text):
+    """Utility to extract JSON from model response that may contain markdown or extra text."""
+    try:
+        # 1. Clean up whitespace and find the JSON structure
+        raw_text = raw_text.strip()
+        
+        # 2. Try to find JSON array or object
+        start_arr = raw_text.find('[')
+        start_obj = raw_text.find('{')
+        
+        # Determine which one appears first (if both exist) or only one
+        if start_arr != -1 and (start_obj == -1 or start_arr < start_obj):
+            start = start_arr
+            end = raw_text.rfind(']')
+        elif start_obj != -1:
+            start = start_obj
+            end = raw_text.rfind('}')
+        else:
+            return json.loads(raw_text) # Fallback to original
+            
+        if start != -1 and end != -1:
+            json_str = raw_text[start:end+1]
+            return json.loads(json_str)
+            
+        return json.loads(raw_text)
+    except Exception as e:
+        print(f"JSON Parsing Error: {e}")
+        return None
+
+
 
 db = get_db()
 jobs_col = db['jobs']
@@ -182,60 +213,106 @@ BRANCH_CAREER_MAP = {
 
 def get_career_advice(branch, skills, assessment_score=None):
     """
-    Generate personalized career advice based on branch and detected skills.
+    Generate personalized career advice using Groq AI based on branch and detected skills.
     Returns recommended roles, skill gaps, projects, and roadmap.
     """
-    branch_data = BRANCH_CAREER_MAP.get(branch, BRANCH_CAREER_MAP.get("CSE"))
-    skills_lower = [s.lower() for s in skills]
-    
-    role_matches = []
-    for role_name, role_data in branch_data["roles"].items():
-        required = role_data["required"]
-        matched = [s for s in required if any(s in skill for skill in skills_lower)]
-        match_pct = round(len(matched) / len(required) * 100) if required else 0
-        missing = [s for s in required if not any(s in skill for skill in skills_lower)]
+    try:
+        skills_str = ", ".join(skills) if skills else "No specific skills detected yet."
+        score_info = f"Latest Interview Score: {assessment_score}/100" if assessment_score else "No interview taken yet."
         
-        role_matches.append({
-            "role": role_name,
-            "match_percentage": match_pct,
-            "matched_skills": matched,
-            "missing_skills": missing[:5],
-            "nice_to_have": role_data.get("nice_to_have", []),
-            "projects": role_data.get("projects", []),
-            "internships": role_data.get("internships", []),
-            "certifications": role_data.get("certifications", []),
-        })
-    
-    # Sort by match %
-    role_matches.sort(key=lambda x: x["match_percentage"], reverse=True)
-    
-    # Best match
-    best_role = role_matches[0] if role_matches else {}
-    
-    # Generate personalized roadmap
-    roadmap = []
-    if best_role.get("missing_skills"):
-        roadmap.append(f"Learn {', '.join(best_role['missing_skills'][:3])} to qualify for {best_role.get('role', 'your target role')}")
-    
-    roadmap.append(f"Build 2-3 projects: {', '.join(best_role.get('projects', ['Domain project'])[:2])}")
-    roadmap.append(f"Get certified: {', '.join(best_role.get('certifications', ['Domain certification'])[:1])}")
-    roadmap.append("Practice DSA on LeetCode (100+ problems at your level)")
-    roadmap.append("Apply for internships 6 months before placement season")
-    
-    if assessment_score and assessment_score < 60:
-        roadmap.append("Boost your assessment score: take 2 mock tests per week on assessment hub")
-    
-    # Resources
-    resources = branch_data.get("learning_resources", {})
-    
-    return {
-        "branch": branch,
-        "top_roles": role_matches[:3],
-        "best_role": best_role.get("role", "Software Engineer"),
-        "improvement_roadmap": roadmap,
-        "free_resources": resources.get("free", []),
-        "paid_resources": resources.get("paid", []),
-    }
+        prompt = f"""
+        You are a World-Class Career Advisor and Industry Expert for {branch} students.
+        Based on the user's profile, provide a highly personalized career matching analysis.
+
+        USER PROFILE:
+        - Engineering Branch: {branch}
+        - Current Skills: {skills_str}
+        - {score_info}
+
+        Provide your analysis strictly in JSON format with these exact keys:
+        - branch: (String) {branch}
+        - top_roles: (List of Objects) Top 3 matching roles. Each object must have:
+            - role: (String) Job title
+            - match_percentage: (Integer 0-100)
+            - matched_skills: (List of strings)
+            - missing_skills: (List of strings)
+            - nice_to_have: (List of strings)
+            - projects: (List of strings) 2-3 specific project ideas for this role
+            - internships: (List of strings) Typical internship titles for this role
+            - certifications: (List of strings) Recommended certifications
+        - best_role: (String) The single best matching role name
+        - improvement_roadmap: (List of strings) A 6-step personalized roadmap to success
+        - free_resources: (List of strings) 3 free learning platforms or specific courses
+        - paid_resources: (List of strings) 3 premium courses or bootcamps
+
+        Specific Instruction: If the user has few skills, be encouraging but realistic in the match percentage.
+        Your response must be ONLY the JSON object.
+        """
+        
+        raw_text = generate_ai_response(prompt)
+        if not raw_text:
+            raise ValueError("AI failed to return career advice")
+            
+        advice = _clean_json_response(raw_text)
+        if advice:
+            # Ensure branch is consistent
+            advice["branch"] = branch
+            return advice
+            
+        raise ValueError("Failed to parse AI career advice JSON")
+
+    except Exception as e:
+        print(f"AI Career Advice Error: {e}. Falling back to static logic.")
+        # FALLBACK to static logic if AI fails
+        branch_data = BRANCH_CAREER_MAP.get(branch, BRANCH_CAREER_MAP.get("CSE"))
+        skills_lower = [s.lower() for s in skills]
+        
+        role_matches = []
+        for role_name, role_data in branch_data["roles"].items():
+            required = role_data["required"]
+            matched = [s for s in required if any(s in skill for skill in skills_lower)]
+            match_pct = round(len(matched) / len(required) * 100) if required else 0
+            missing = [s for s in required if not any(s in skill for skill in skills_lower)]
+            
+            role_matches.append({
+                "role": role_name,
+                "match_percentage": match_pct,
+                "matched_skills": matched,
+                "missing_skills": missing[:5],
+                "nice_to_have": role_data.get("nice_to_have", []),
+                "projects": role_data.get("projects", []),
+                "internships": role_data.get("internships", []),
+                "certifications": role_data.get("certifications", []),
+            })
+        
+        # Sort by match %
+        role_matches.sort(key=lambda x: x["match_percentage"], reverse=True)
+        best_role = role_matches[0] if role_matches else {}
+        
+        roadmap = []
+        if best_role.get("missing_skills"):
+            roadmap.append(f"Learn {', '.join(best_role['missing_skills'][:3])} to qualify for {best_role.get('role', 'your target role')}")
+        
+        roadmap.extend([
+            f"Build 2-3 projects: {', '.join(best_role.get('projects', ['Domain project'])[:2])}",
+            f"Get certified: {', '.join(best_role.get('certifications', ['Domain certification'])[:1])}",
+            "Practice DSA on LeetCode (100+ problems at your level)",
+            "Apply for internships 6 months before placement season"
+        ])
+        
+        if assessment_score and assessment_score < 60:
+            roadmap.append("Boost your assessment score: take 2 mock tests per week on assessment hub")
+        
+        resources = branch_data.get("learning_resources", {})
+        
+        return {
+            "branch": branch,
+            "top_roles": role_matches[:3],
+            "best_role": best_role.get("role", "Software Engineer"),
+            "improvement_roadmap": roadmap,
+            "free_resources": resources.get("free", []),
+            "paid_resources": resources.get("paid", []),
+        }
 
 def get_job_recommendations(branch, role=None, user_skills=None, location=None):
     """
@@ -323,17 +400,18 @@ def match_job_with_ai(job, user_skills, resume_score=0):
         - improvement_advice: (String, 1 specific action to take)
         """
         
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content(prompt)
+        # Call new centralized service
+        raw_text = generate_ai_response(prompt)
         
-        raw_text = response.text.strip()
-        if "```json" in raw_text:
-            raw_text = raw_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in raw_text:
-            raw_text = raw_text.split("```")[1].split("```")[0].strip()
+        if not raw_text:
+            raise ValueError("Failed to get match results from AI")
             
-        result = json.loads(raw_text)
-        return result
+        result = _clean_json_response(raw_text)
+        
+        if result:
+            return result
+            
+        raise ValueError("Failed to parse AI response as JSON")
     except Exception as e:
         print(f"Job Matching AI Error: {e}")
         # Basic fallback matching
@@ -348,3 +426,61 @@ def match_job_with_ai(job, user_skills, resume_score=0):
             "missing_skills": [s for s in job_skills if s not in user_skills_lower][:3],
             "improvement_advice": "Focus on building a project using the missing skills."
         }
+from .ai_service import generate_ai_response, generate_chat_completion
+
+def chat_with_career_assistant(message, user_skills=None, branch="General", role=None, hiring_level=None, history=None):
+    """
+    Generate a helpful, conversational, and interactive response for the career assistant.
+    Maintains memory by processing previous message history.
+    """
+    try:
+        skills_str = ", ".join(user_skills) if user_skills else "General student"
+        
+        # 1. Define the persistent Mentor System Prompt (High-Clarity style)
+        system_prompt = f"""
+        You are a friendly, professional AI Career Mentor. 
+        Your goal is to provide **easy-to-scan, points-wise** career coaching.
+
+        USER CONTEXT:
+        - Engineering Branch: {branch}
+        - Current Skills: {skills_str}
+        - Targeted Role: {role or 'Exploring'}
+
+        STRICT RESPONSE RULES:
+        1. **Points-Wise Only**: Never write long paragraphs. Use clear bullet points (•) for every piece of advice.
+        2. **Visual Gaps**: Use **double line breaks** (\n\n) between every point and every section to ensure the view isn't "congested."
+        3. **Emoji Rich**: Use 1-2 relevant emojis (🚀, 💡, 🎯, 🎓, 💻) in every response to make it engaging.
+        4. **Interactive Curiosity**: End every response with a **short, easy follow-up question**.
+        5. **No Formal Fluff**: Skip formal introductions like "I'm here to help." Jump straight to the points.
+        6. **Simple Language**: Use short, punchy sentences. Avoid complex grammar.
+
+        EXAMPLE STYLE:
+        • 🚀 For **CSE**, I recommend looking into **React** or **Backend APIs**! \n\n
+        • 💡 You already have {skills_str}, which is a massive head start. \n\n
+        • 🎓 Should we look at specific certifications or project ideas first?
+
+        Respond as the Mentor. Points-wise, clear, with gaps and emojis.
+        """
+
+        # 2. Build the message list for the AI
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add history if provided (filtered to last 10 messages for context efficiency)
+        if history and isinstance(history, list):
+            # Groq/AI expects 'user' and 'assistant' roles. 
+            messages.extend(history[-10:])
+            
+        # Add the current user message
+        messages.append({"role": "user", "content": message})
+        
+        # 3. Generate response using llama-3.1-8b-instant for fast interaction
+        response = generate_chat_completion(messages, model_id="llama-3.1-8b-instant")
+        
+        if response:
+            return {"reply": response}
+            
+        raise ValueError("Empty response from Interactive Advisor service")
+        
+    except Exception as e:
+        print(f"Interactive Career Chatbot Error: {e}")
+        return {"reply": "I'm having a little trouble connecting. Could you try your question again? 🚀"}

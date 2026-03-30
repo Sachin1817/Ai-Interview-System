@@ -14,7 +14,7 @@ const ProfileCard = ({ children, completion }) => {
         className="glass-panel p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden preserve-3d"
       >
         {/* Background Accent */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 blur-3xl -mr-16 -mt-16" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 blur-3xl -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 blur-3xl -ml-16 -mb-16" />
 
         {/* Header with Completion Bar */}
@@ -24,17 +24,17 @@ const ProfileCard = ({ children, completion }) => {
               User Profile
             </h2>
             <div className="text-right">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter block mb-1">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter block mb-1">
                 Profile Completion
               </span>
-              <span className={`text-sm font-black ${completion === 100 ? 'text-emerald-400' : 'text-cyan-400'}`}>
+              <span className={`text-sm font-black ${completion === 100 ? 'text-emerald-400' : 'text-accent dark:text-cyan-400'}`}>
                 {completion}%
               </span>
             </div>
           </div>
           
           {/* Progress Bar */}
-          <div className="w-full h-2 bg-slate-900/50 rounded-full overflow-hidden border border-slate-700/30">
+          <div className="w-full h-2 bg-slate-200 dark:bg-slate-900/50 rounded-full overflow-hidden border border-slate-100 dark:border-white/5">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${completion}%` }}

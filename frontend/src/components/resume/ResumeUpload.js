@@ -44,7 +44,7 @@ const ResumeUpload = () => {
                         Resume Diagnosis Engine
                     </h2>
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
-                        <Sparkles className="w-3 h-3" /> Powered by Gemini AI
+                        <Sparkles className="w-3 h-3" /> Powered by Groq AI
                     </div>
                 </div>
 

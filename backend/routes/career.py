@@ -123,3 +123,25 @@ def job_match():
         
     match_result = match_job_with_ai(job, skills, resume_score)
     return jsonify(match_result), 200
+
+@career_bp.route('/chat', methods=['POST'])
+def career_assistant_chat():
+    """
+    Floating AI career assistant endpoint.
+    Expects: { message, userSkills, predictedRole, hiringLevel, branch }
+    """
+    from services.career_service import chat_with_career_assistant
+    
+    data = request.get_json()
+    message = data.get("message")
+    skills = data.get("userSkills", [])
+    role = data.get("predictedRole", "")
+    hiring_level = data.get("hiringLevel", "")
+    branch = data.get("branch", "General")
+    history = data.get("history", []) # NEW: Get full history
+    
+    if not message:
+        return jsonify({"error": "Message required"}), 400
+        
+    result = chat_with_career_assistant(message, skills, branch, role, hiring_level, history)
+    return jsonify(result), 200
