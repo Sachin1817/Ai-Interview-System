@@ -1,3 +1,5 @@
+const express = require('express');
+const router = express.Router();
 const Groq = require('groq-sdk');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const dotenv = require('dotenv');
