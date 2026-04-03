@@ -11,4 +11,4 @@ werkzeug==3.0.1
 python-dotenv==1.0.1
 groq
 flask-apscheduler==1.13.1
-
+gunicorn

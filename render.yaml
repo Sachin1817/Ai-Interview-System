@@ -1,13 +1,13 @@
 services:
   - type: web
     name: ai-interview-backend
-    env: python
+    runtime: python
     plan: free
     autoDeploy: true
     rootDir: backend
     buildCommand: |
       pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:10000
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
