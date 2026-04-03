@@ -40,7 +40,6 @@ services:
   - type: web
     name: ai-interview-frontend
     env: static
-    plan: free
     autoDeploy: true
     rootDir: frontend
     buildCommand: |
