@@ -21,6 +21,8 @@
     "chart.js": "^4.4.8",
     "firebase": "^12.10.0",
     "framer-motion": "^12.4.7",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.475.0",
     "postcss": "^8.4.35",
     "react": "^19.0.0",

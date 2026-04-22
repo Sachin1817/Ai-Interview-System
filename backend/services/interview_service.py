@@ -10,30 +10,37 @@ from .question_bank import QUESTION_BANK, COMMON_QUESTIONS
 def _clean_json_response(raw_text):
     """Utility to extract JSON from model response that may contain markdown or extra text."""
     try:
-        # 1. Clean up whitespace and find the JSON structure
-        raw_text = raw_text.strip()
-        
-        # 2. Try to find JSON array or object
-        start_arr = raw_text.find('[')
+        if not raw_text:
+            return None
+            
+        # 1. Clean up markdown blocks if present
+        if "```json" in raw_text:
+            raw_text = raw_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in raw_text:
+            raw_text = raw_text.split("```")[1].split("```")[0].strip()
+            
+        # 2. Try to find the first '{' or '[' and the last '}' or ']'
         start_obj = raw_text.find('{')
+        start_arr = raw_text.find('[')
         
-        # Determine which one appears first (if both exist) or only one
-        if start_arr != -1 and (start_obj == -1 or start_arr < start_obj):
-            start = start_arr
-            end = raw_text.rfind(']')
-        elif start_obj != -1:
+        # Decide which one to look for
+        if start_obj != -1 and (start_arr == -1 or start_obj < start_arr):
             start = start_obj
             end = raw_text.rfind('}')
+        elif start_arr != -1:
+            start = start_arr
+            end = raw_text.rfind(']')
         else:
-            return json.loads(raw_text) # Fallback to original
+            # Try direct load
+            return json.loads(raw_text.strip())
             
         if start != -1 and end != -1:
             json_str = raw_text[start:end+1]
             return json.loads(json_str)
             
-        return json.loads(raw_text)
+        return json.loads(raw_text.strip())
     except Exception as e:
-        print(f"JSON Parsing Error: {e}")
+        print(f"CRITICAL [Parsing Error]: {e} | Raw segment: {raw_text[:100]}...")
         return None
 
 
@@ -112,33 +119,29 @@ def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n
     
     try:
         prompt = f"""
-        You are an elite technical interviewer at a top-tier global firm (like Google, NVIDIA, or Tesla).
-        Generate exactly {n} high-quality, professional, and detailed interview questions for a candidate with this profile:
+        You are an elite technical interviewer. Generate exactly {n} interview questions as a JSON array.
+        
+        Candidate Profile:
         - Branch: {branch}
         - Target Role: {role or 'General Engineer'}
-        - Difficulty Level: {difficulty}
-        - RANDOMNESS_SEED: {random_seed} (USE THIS TO ENSURE TRULY UNIQUE QUESTIONS)
+        - Difficulty: {difficulty}
+        - Session ID: {random_seed}
         
-        CRITICAL STYLE REQUIREMENTS (NON-NEGOTIABLE):
-        1. INFINITE VARIETY: Do NOT repeat common, cliché, or frequently asked questions. Every question must be uniquely tailored to the specific intersection of '{branch}' and '{role}'.
-        2. NO SHORT QUESTIONS: Every question must be a well-structured paragraph of 3-4 sentences. Provide real-world context, a specific engineering scenario, or explain the critical importance of a concept before asking the question.
-        3. ROLE-DEEP-DIVE: The questions MUST strictly focus on the deep technical competencies of a '{role}'. 
-           Ex: For a Full Stack Developer, don't just ask about HTML. Ask about state management performance in large-scale React apps or database indexing strategies for real-time systems.
-        4. STRUCTURE: 
-           - {n-1} technical/domain-specific questions.
-           - 1 complex behavioral/situation-based question tailored specifically to the '{role}' job environment.
-        5. LEVEL APPROPRIATE: Maintain '{difficulty}' level depth but always with professional, long-form phrasing.
+        Requirements:
+        1. Contextual Questions: Each question must be 2-3 sentences long with context.
+        2. Role Specific: High relevance to {role}.
+        3. Structure: {n-1} Technical questions, 1 Behavioral question.
         
-        The output must be pure, valid JSON in the following structure:
+        Output format:
         [
             {{
                 "id": "q1",
-                "question": "The detailed 3-4 sentence question text here?",
-                "topic": "The specific sub-topic"
-            }},
-            ...
+                "question": "Question text...",
+                "topic": "Sub-topic"
+            }}
         ]
-        Do not output any introductory or concluding text, ONLY the JSON array.
+        
+        Important: Return ONLY the JSON array. No markdown, no conversation.
         """
         
         raw_text = generate_ai_response(prompt)
@@ -284,24 +287,29 @@ def generate_interview_result(answers_with_scores, branch, difficulty):
         readiness = "Needs Improvement 📚"
         readiness_color = "red"
 
-    # Roadmap suggestions
+    # Advanced Roadmap Suggesstions
     roadmap = []
     if weak_topics:
-        roadmap.append(f"Focus on improving: {', '.join(weak_topics[:3])}")
-    roadmap.append("Practice mock interviews weekly")
-    roadmap.append("Build 2-3 projects related to your domain")
-    if avg_comm < 6:
-        roadmap.append("Work on communication: speak clearly and structure answers with STAR method")
-
+        roadmap.append(f"Master {', '.join(weak_topics[:2])} fundamentals through practical implementations.")
+        roadmap.append(f"Review core principles of {branch} Engineering with focus on {difficulty} concepts.")
+    
+    if avg_tech < 7:
+        roadmap.append("Deep dive into system architecture and domain-specific edge cases.")
+    
+    if avg_comm < 6.5:
+        roadmap.append("Enhance technical articulation using the STAR framework for behavioral responses.")
+    
+    roadmap.append("Engage in consistent daily coding and theoretical verification sessions.")
+    
     return {
         "overall_score": overall,
         "domain_score": avg_tech,
         "communication_score": avg_comm,
-        "strengths": strengths if strengths else ["Good attempt across all topics"],
+        "strengths": strengths if strengths else ["Showing foundational potential"],
         "weak_topics": weak_topics if weak_topics else [],
         "job_readiness": readiness,
         "readiness_color": readiness_color,
-        "improvement_roadmap": roadmap,
+        "improvement_roadmap": roadmap[:5], # Keep top 5 items
         "branch": branch,
         "difficulty": difficulty,
         "questions_attempted": len(answers_with_scores),

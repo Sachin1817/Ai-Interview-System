@@ -29,3 +29,6 @@ uploads/
 backend/uploads/
 *.db
 *.sqlite3
+
+*.log
+test_out.txt

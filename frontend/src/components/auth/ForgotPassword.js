@@ -35,53 +35,62 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="min-h-screen pt-40 pb-20 flex items-center justify-center p-6 relative overflow-hidden bg-light-bg dark:bg-dark-bg transition-colors duration-500">
+            {/* Ambient glows */}
+            <div className="blob blob-1"></div>
+            <div className="blob blob-2"></div>
+            <div className="blob blob-3"></div>
+
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="glass-panel p-8 rounded-2xl w-full max-w-md shadow-2xl"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="relative w-full max-w-xl z-10"
             >
-                <h2 className="text-3xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">
-                    Reset Password
-                </h2>
-                <p className="text-slate-400 text-center mb-8 text-sm">
-                    Enter your email and we'll send you a link to reset your password.
-                </p>
-
-                {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-sm mb-6">
-                        {error}
-                    </div>
-                )}
-
-                {message && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/50 text-emerald-500 p-3 rounded-lg text-sm mb-6">
-                        {message}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
-                        <input
-                            {...register('email')}
-                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                            placeholder="name@example.com"
-                        />
-                        {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
+                <div className="glass-panel p-12 rounded-[3rem] border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
+                    {/* Header */}
+                    <div className="text-center mb-12">
+                        <div className="inline-flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-slate-900 text-lg shadow-glow-cyan bg-premium-gradient">AI</div>
+                            <span className="text-slate-900 dark:text-white font-black text-2xl tracking-tighter uppercase">Interview Pro</span>
+                        </div>
+                        <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Reset Key</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">We'll send you a secure link to your identifier.</p>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
-                    >
-                        {loading ? 'Sending...' : 'Send Reset Link'}
-                    </button>
-                </form>
+                    {error && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                            className="flex items-center gap-3 p-5 rounded-2xl text-sm mb-8 bg-red-500/10 border border-red-500/20 text-red-500 font-bold">
+                            <span className="text-lg">⚠️</span> {error}
+                        </motion.div>
+                    )}
 
-                <div className="text-center mt-8 text-sm">
-                    <Link to="/login" className="text-blue-400 hover:underline">Back to Login</Link>
+                    {message && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                            className="flex items-center gap-3 p-5 rounded-2xl text-sm mb-8 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold">
+                            <span className="text-lg">📧</span> {message}
+                        </motion.div>
+                    )}
+
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                        <div>
+                            <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3 text-slate-500 dark:text-slate-500 ml-1">Email Identifier</label>
+                            <input
+                                {...register('email')}
+                                className="premium-input"
+                                placeholder="name@example.com"
+                            />
+                            {errors.email && <p className="text-red-500 text-[10px] mt-2 ml-2 font-black uppercase tracking-wider">{errors.email.message}</p>}
+                        </div>
+
+                        <button type="submit" disabled={loading} className="premium-button w-full mt-4">
+                            {loading ? <div className="w-6 h-6 border-4 border-slate-900/30 border-t-slate-900 rounded-full animate-spin"></div> : '✦ SEND SECURE LINK'}
+                        </button>
+                    </form>
+
+                    <div className="text-center mt-12 text-sm font-medium text-slate-500">
+                        Remember it? <Link to="/login" className="font-black text-cyan-500 hover:text-cyan-400 transition-colors uppercase tracking-widest ml-1">Go Back</Link>
+                    </div>
                 </div>
             </motion.div>
         </div>

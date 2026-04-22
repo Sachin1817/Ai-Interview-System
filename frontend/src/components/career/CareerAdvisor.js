@@ -280,7 +280,7 @@ const CareerAdvisor = () => {
     };
 
     return (
-        <div className="min-h-screen p-8">
+        <div className="min-h-screen pt-40 pb-20 px-8">
             <div className="max-w-5xl mx-auto">
                 <div className="text-center mb-10">
                     <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500 mb-3">

@@ -76,87 +76,92 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-light-bg dark:bg-dark-bg transition-colors duration-300">
+        <div className="min-h-screen pt-40 pb-20 flex items-center justify-center p-6 relative overflow-hidden bg-light-bg dark:bg-dark-bg transition-colors duration-500">
             {/* Ambient glows */}
-            <div className="fixed top-[-10%] left-[-5%] w-80 h-80 rounded-full opacity-20 pointer-events-none bg-accent dark:bg-cyan-400 blur-[100px]"/>
-            <div className="fixed bottom-[-10%] right-[-5%] w-96 h-96 rounded-full opacity-15 pointer-events-none bg-blue-500 dark:bg-indigo-500 blur-[100px]"/>
+            <div className="blob blob-1"></div>
+            <div className="blob blob-2"></div>
+            <div className="blob blob-3"></div>
 
             <motion.div
-                initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.45 }}
-                className="relative w-full max-w-md z-10 glass-panel p-10 rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-2xl transition-all duration-300"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="relative w-full max-w-xl z-10"
             >
-                {/* Header */}
-                <div className="text-center mb-10">
-                    <div className="inline-flex items-center gap-2 mb-5">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white dark:text-slate-900 text-sm shadow-lg bg-gradient-to-br from-cyan-400 to-blue-600">AI</div>
-                        <span className="text-light-text dark:text-white font-bold text-lg tracking-tight">Interview System</span>
-                    </div>
-                    <h2 className="text-3xl font-black text-light-text dark:text-white mb-2">Welcome Back</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Sign in to continue your AI journey</p>
-                </div>
-
-                {/* Error */}
-                {error && (
-                    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-3 p-4 rounded-xl text-sm mb-6"
-                        style={{background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171'}}>
-                        <span>⚠️</span> {error}
-                    </motion.div>
-                )}
-
-                {/* Form */}
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                    <div>
-                        <label className="block text-xs font-bold uppercase tracking-widest mb-2 text-slate-500 dark:text-slate-400">Email Address</label>
-                        <input
-                            {...register('email')}
-                            className="w-full rounded-xl px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-light-text dark:text-white text-sm focus:outline-none focus:border-accent dark:focus:border-cyan-500 transition-all font-medium"
-                            placeholder="name@example.com"
-                        />
-                        {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1 font-semibold">{errors.email.message}</p>}
+                <div className="glass-panel p-12 rounded-[3rem] border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
+                    {/* Header */}
+                    <div className="text-center mb-12">
+                        <motion.div 
+                            initial={{ y: -20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="inline-flex items-center gap-4 mb-8"
+                        >
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-slate-900 text-lg shadow-glow-cyan bg-premium-gradient">AI</div>
+                            <span className="text-slate-900 dark:text-white font-black text-2xl tracking-tighter uppercase">Interview Pro</span>
+                        </motion.div>
+                        <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Welcome Back</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">Continue your journey to success.</p>
                     </div>
 
-                    <div>
-                        <div className="flex justify-between items-center mb-2">
-                            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Password</label>
-                            <Link to="/forgot-password" title="Forgot Password" className="text-xs font-bold text-accent dark:text-blue-400 hover:underline">Forgot?</Link>
+                    {/* Error */}
+                    {error && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                            className="flex items-center gap-3 p-5 rounded-2xl text-sm mb-8 bg-red-500/10 border border-red-500/20 text-red-500 font-bold">
+                            <span className="text-lg">⚠️</span> {error}
+                        </motion.div>
+                    )}
+
+                    {/* Form */}
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3 text-slate-500 dark:text-slate-500 ml-1">Email Identifier</label>
+                            <input
+                                {...register('email')}
+                                className="premium-input"
+                                placeholder="e.g. alex@career.ai"
+                            />
+                            {errors.email && <p className="text-red-500 text-[10px] mt-2 ml-2 font-black uppercase tracking-wider">{errors.email.message}</p>}
                         </div>
-                        <input
-                            type="password"
-                            {...register('password')}
-                            className="w-full rounded-xl px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-light-text dark:text-white text-sm focus:outline-none focus:border-accent dark:focus:border-cyan-500 transition-all font-medium"
-                            placeholder="••••••••"
-                        />
-                        {errors.password && <p className="text-red-500 text-[10px] mt-1 ml-1 font-semibold">{errors.password.message}</p>}
+
+                        <div>
+                            <div className="flex justify-between items-center mb-3 ml-1">
+                                <label className="block text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500">Security Key</label>
+                                <Link to="/forgot-password" title="Forgot Password" className="text-xs font-black text-cyan-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">Forgot?</Link>
+                            </div>
+                            <input
+                                type="password"
+                                {...register('password')}
+                                className="premium-input"
+                                placeholder="••••••••"
+                            />
+                            {errors.password && <p className="text-red-500 text-[10px] mt-2 ml-2 font-black uppercase tracking-wider">{errors.password.message}</p>}
+                        </div>
+
+                        <button type="submit" disabled={loading} className="premium-button w-full mt-4">
+                            {loading ? <div className="w-6 h-6 border-4 border-slate-900/30 border-t-slate-900 rounded-full animate-spin"></div> : '✦ SECURE SIGN IN'}
+                        </button>
+                    </form>
+
+                    {/* Divider */}
+                    <div className="relative my-10">
+                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200 dark:border-white/5"></span></div>
+                        <div className="relative flex justify-center text-[10px] uppercase tracking-[0.3em]">
+                            <span className="px-4 bg-white dark:bg-slate-900 text-slate-400 font-black">Fast Track</span>
+                        </div>
                     </div>
 
-                    <button type="submit" disabled={loading}
-                        className="w-full font-bold py-3.5 rounded-xl text-white dark:text-slate-900 active:scale-95 transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-50 bg-gradient-to-r from-accent to-blue-600 shadow-lg shadow-accent/20 dark:from-cyan-500 dark:to-blue-600 dark:shadow-cyan-500/20"
-                    >
-                        {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : '✦ Sign In'}
+                    {/* Google Button */}
+                    <button onClick={handleGoogleLogin} disabled={loading}
+                        className="w-full font-black py-4 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 shadow-sm uppercase text-xs tracking-widest">
+                        <GoogleIcon />
+                        Log in with Google
                     </button>
-                </form>
 
-                {/* Divider */}
-                <div className="relative my-7">
-                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200 dark:border-white/5"></span></div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="px-3 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 font-bold">Or continue with</span>
-                    </div>
+                    <p className="text-center mt-12 text-sm font-medium text-slate-500">
+                        New to the platform? <Link to="/register" className="font-black text-cyan-500 hover:text-cyan-400 transition-colors uppercase tracking-widest ml-1">Join Now</Link>
+                    </p>
                 </div>
-
-                {/* Google Button */}
-                <button onClick={handleGoogleLogin} disabled={loading}
-                    className="w-full font-semibold py-3 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-light-text dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10">
-                    <GoogleIcon />
-                    Sign in with Google
-                </button>
-
-                <p className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400">
-                    Don't have an account? <Link to="/register" className="font-bold text-accent dark:text-blue-400 hover:underline">Create one free</Link>
-                </p>
             </motion.div>
         </div>
     );

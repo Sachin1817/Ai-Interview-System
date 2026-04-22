@@ -102,7 +102,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 flex items-center justify-center">
+    <div className="min-h-screen pt-40 pb-20 px-6 flex flex-col items-center justify-center">
       <ProfileCard completion={completion}>
         
         {/* Status Notification */}

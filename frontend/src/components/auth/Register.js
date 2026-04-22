@@ -74,131 +74,94 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 py-8" style={{background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)'}}>
+        <div className="min-h-screen pt-40 pb-20 flex items-center justify-center p-6 relative overflow-hidden bg-light-bg dark:bg-dark-bg transition-colors duration-500">
             {/* Ambient glows */}
-            <div className="fixed top-[-10%] right-[-5%] w-80 h-80 rounded-full opacity-20 pointer-events-none" style={{background: 'radial-gradient(circle, #818cf8, transparent)'}}/>
-            <div className="fixed bottom-[-10%] left-[-5%] w-96 h-96 rounded-full opacity-15 pointer-events-none" style={{background: 'radial-gradient(circle, #34d399, transparent)'}}/>
+            <div className="blob blob-1"></div>
+            <div className="blob blob-2"></div>
+            <div className="blob blob-3"></div>
 
             <motion.div
-                initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.45 }}
-                className="relative w-full max-w-xl z-10 my-4"
-                style={{
-                    background: 'rgba(15, 23, 42, 0.75)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(129, 140, 248, 0.15)',
-                    borderRadius: '1.75rem',
-                    boxShadow: '0 25px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-                    padding: '2.5rem'
-                }}
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="relative w-full max-w-3xl z-10"
             >
-                {/* Header */}
-                <div className="text-center mb-10">
-                    <div className="inline-flex items-center gap-2 mb-5">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-slate-900 text-sm shadow-lg" style={{background: 'linear-gradient(135deg, #34d399, #818cf8)'}}>AI</div>
-                        <span className="text-white font-bold text-lg tracking-tight">Interview System</span>
+                <div className="glass-panel p-12 rounded-[3.5rem] border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
+                    {/* Header */}
+                    <div className="text-center mb-12">
+                        <div className="inline-flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-slate-900 text-lg shadow-glow-cyan bg-premium-gradient">AI</div>
+                            <span className="text-slate-900 dark:text-white font-black text-2xl tracking-tighter uppercase">Interview Pro</span>
+                        </div>
+                        <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Create Profile</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">Join the next generation of placement prep.</p>
                     </div>
-                    <h2 className="text-3xl font-black text-white mb-2">Join AI Interviewer</h2>
-                    <p className="text-slate-400 text-sm">Start your journey to a dream career today</p>
+
+                    {/* Error */}
+                    {error && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                            className="flex items-center gap-3 p-5 rounded-2xl text-sm mb-8 bg-red-500/10 border border-red-500/20 text-red-500 font-bold">
+                            <span className="text-lg">⚠️</span> {error}
+                        </motion.div>
+                    )}
+
+                    {/* Success */}
+                    {success && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                            className="flex items-center gap-3 p-5 rounded-2xl text-sm mb-8 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold">
+                            <span className="text-lg">📧</span> {success}
+                        </motion.div>
+                    )}
+
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3 text-slate-500 dark:text-slate-500 ml-1">Full Name</label>
+                                <input {...register('name')} className="premium-input" placeholder="e.g. Alex Johnson" />
+                                {errors.name && <p className="text-red-500 text-[10px] mt-2 ml-2 font-black uppercase tracking-wider">{errors.name.message}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3 text-slate-500 dark:text-slate-500 ml-1">Email Identifier</label>
+                                <input {...register('email')} className="premium-input" placeholder="alex@carrier.ai" />
+                                {errors.email && <p className="text-red-500 text-[10px] mt-2 ml-2 font-black uppercase tracking-wider">{errors.email.message}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3 text-slate-500 dark:text-slate-500 ml-1">Specialization</label>
+                                <select {...register('branch')} className="premium-input appearance-none cursor-pointer">
+                                    {branches.map(b => (
+                                        <option key={b} value={b} className="bg-slate-900">{b}</option>
+                                    ))}
+                                </select>
+                                {errors.branch && <p className="text-red-500 text-[10px] mt-2 ml-2 font-black uppercase tracking-wider">{errors.branch.message}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3 text-slate-500 dark:text-slate-500 ml-1">Security Key</label>
+                                <input type="password" {...register('password')} className="premium-input" placeholder="••••••••" />
+                                {errors.password && <p className="text-red-500 text-[10px] mt-2 ml-2 font-black uppercase tracking-wider">{errors.password.message}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3 text-slate-500 dark:text-slate-500 ml-1">Confirm Key</label>
+                                <input type="password" {...register('confirmPassword')} className="premium-input" placeholder="••••••••" />
+                                {errors.confirmPassword && <p className="text-red-500 text-[10px] mt-2 ml-2 font-black uppercase tracking-wider">{errors.confirmPassword.message}</p>}
+                            </div>
+                        </div>
+
+                        <button type="submit" disabled={loading} className="premium-button w-full mt-4">
+                            {loading ? <div className="w-6 h-6 border-4 border-slate-900/30 border-t-slate-900 rounded-full animate-spin"></div> : '✦ ESTABLISH ACCOUNT'}
+                        </button>
+                    </form>
+
+                    <p className="text-center mt-12 text-sm font-medium text-slate-500">
+                        Already registered? <Link to="/login" className="font-black text-cyan-500 hover:text-cyan-400 transition-colors uppercase tracking-widest ml-1">Sign In</Link>
+                    </p>
                 </div>
-
-                {/* Error */}
-                {error && (
-                    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-3 p-4 rounded-xl text-sm mb-6"
-                        style={{background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171'}}>
-                        <span>⚠️</span> {error}
-                    </motion.div>
-                )}
-
-                {/* Success */}
-                {success && (
-                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-3 p-4 rounded-xl text-sm mb-6"
-                        style={{background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)', color: '#34d399'}}>
-                        <span>📧</span> {success}
-                    </motion.div>
-                )}
-
-                {/* Form */}
-                <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                    {/* Full Name */}
-                    <div className="md:col-span-2">
-                        <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{color: '#94a3b8'}}>Full Name</label>
-                        <input {...register('name')} autoComplete="off"
-                            className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none transition-all"
-                            style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.2)', color: 'white'}}
-                            onFocus={e => e.target.style.border = '1px solid rgba(129,140,248,0.6)'}
-                            onBlur={e => e.target.style.border = '1px solid rgba(129,140,248,0.2)'}
-                            placeholder="John Doe" />
-                        {errors.name && <p className="text-red-400 text-[10px] mt-1 ml-1 font-semibold">{errors.name.message}</p>}
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                        <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{color: '#94a3b8'}}>Email Address</label>
-                        <input {...register('email')} autoComplete="off"
-                            className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none transition-all"
-                            style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.2)', color: 'white'}}
-                            onFocus={e => e.target.style.border = '1px solid rgba(129,140,248,0.6)'}
-                            onBlur={e => e.target.style.border = '1px solid rgba(129,140,248,0.2)'}
-                            placeholder="name@example.com" />
-                        {errors.email && <p className="text-red-400 text-[10px] mt-1 ml-1 font-semibold">{errors.email.message}</p>}
-                    </div>
-
-                    {/* Branch */}
-                    <div>
-                        <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{color: '#94a3b8'}}>Branch</label>
-                        <select {...register('branch')}
-                            className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none transition-all cursor-pointer"
-                            style={{background: 'rgba(30,27,74,0.9)', border: '1px solid rgba(129,140,248,0.2)', color: 'white'}}
-                            onFocus={e => e.target.style.border = '1px solid rgba(129,140,248,0.6)'}
-                            onBlur={e => e.target.style.border = '1px solid rgba(129,140,248,0.2)'}>
-                            {branches.map(b => <option key={b} value={b} style={{background: '#1e1b4b'}}>{b}</option>)}
-                        </select>
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{color: '#94a3b8'}}>Password</label>
-                        <input type="password" {...register('password')} autoComplete="new-password"
-                            className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none transition-all"
-                            style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.2)', color: 'white'}}
-                            onFocus={e => e.target.style.border = '1px solid rgba(129,140,248,0.6)'}
-                            onBlur={e => e.target.style.border = '1px solid rgba(129,140,248,0.2)'}
-                            placeholder="••••••••" />
-                        {errors.password && <p className="text-red-400 text-[10px] mt-1 ml-1 font-semibold">{errors.password.message}</p>}
-                    </div>
-
-                    {/* Confirm Password */}
-                    <div>
-                        <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{color: '#94a3b8'}}>Confirm Password</label>
-                        <input type="password" {...register('confirmPassword')} autoComplete="new-password"
-                            className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none transition-all"
-                            style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.2)', color: 'white'}}
-                            onFocus={e => e.target.style.border = '1px solid rgba(129,140,248,0.6)'}
-                            onBlur={e => e.target.style.border = '1px solid rgba(129,140,248,0.2)'}
-                            placeholder="••••••••" />
-                        {errors.confirmPassword && <p className="text-red-400 text-[10px] mt-1 ml-1 font-semibold">{errors.confirmPassword.message}</p>}
-                    </div>
-
-                    {/* Submit */}
-                    <button type="submit" disabled={loading}
-                        className="md:col-span-2 w-full font-bold py-3.5 rounded-xl text-slate-900 active:scale-95 transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
-                        style={{background: 'linear-gradient(135deg, #34d399, #818cf8)', boxShadow: '0 8px 24px rgba(52,211,153,0.2)'}}>
-                        {loading ? <div className="w-5 h-5 border-2 border-slate-700/30 border-t-slate-900 rounded-full animate-spin"></div> : '✦ Create Free Account'}
-                    </button>
-                </form>
-
-                <p className="text-center mt-8 text-sm" style={{color: '#64748b'}}>
-                    Already have an account? <Link to="/login" className="font-bold hover:underline" style={{color: '#818cf8'}}>Log in</Link>
-                </p>
             </motion.div>
         </div>
     );
 };
 
 export default Register;
-

@@ -81,6 +81,16 @@ def generate_assessment():
             if not questions:
                 raise ValueError("Could not extract valid JSON from AI response")
             
+            # Extract questions if wrapped in a dict
+            if isinstance(questions, dict) and "questions" in questions:
+                questions = questions["questions"]
+            elif isinstance(questions, dict):
+                # if it is a dict but no questions key, maybe it's the single object
+                questions = [questions]
+                
+            if not isinstance(questions, list):
+                raise ValueError("AI response did not contain a list of questions")
+
             # Append unique IDs
             for i, q in enumerate(questions):
                 q['id'] = f"ai_{uuid.uuid4().hex[:8]}"

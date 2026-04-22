@@ -1,29 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertCircle, BrainCircuit, Zap, ArrowRight, Star, RefreshCw, Layers, Terminal, Activity, ChevronRight } from 'lucide-react';
 import { MCQ_BANK } from '../../data/mcqBank';
-
-// ── Comprehensive MCQ Question Bank ──
-// Using external MCQ_BANK from src/data/mcqBank.js
+import api from '../../services/api';
 
 const CATEGORY_MAP = {
-    Technical: { icon: '💻', color: 'cyan', branches: ['CSE', 'IT', 'ECE', 'EEE', 'ME', 'Civil'] },
-    Aptitude: { icon: '🧮', color: 'purple', topics: ['Quantitative', 'Logical'] },
-    Communication: { icon: '💬', color: 'emerald', topics: ['Grammar'] },
+    Technical: { icon: <Terminal className="w-5 h-5" />, color: 'cyan', label: 'Technical Accuracy', branches: ['CSE', 'IT', 'ECE', 'EEE', 'ME', 'Civil'] },
+    Aptitude: { icon: <BrainCircuit className="w-5 h-5" />, color: 'purple', label: 'Logical Reasoning', topics: ['Quantitative', 'Logical'] },
+    Communication: { icon: <Star className="w-5 h-5" />, color: 'emerald', label: 'Verbal Efficiency', topics: ['Grammar'] },
 };
 
 // ── Timer ──
 const QuizTimer = ({ duration, onExpire }) => {
     const [t, setT] = useState(duration);
     useEffect(() => {
-        const i = setInterval(() => setT(p => { if (p <= 1) { clearInterval(i); onExpire(); return 0; } return p - 1; }), 1000);
+        const i = setInterval(() => setT(p => { 
+            if (p <= 1) { 
+                clearInterval(i); 
+                onExpire(); 
+                return 0; 
+            } 
+            return p - 1; 
+        }), 1000);
         return () => clearInterval(i);
-    }, []);
+    }, [onExpire]);
+    
     const pct = (t / duration) * 100;
     return (
-        <div className={`flex items-center gap-2 ${pct < 25 ? 'text-red-400 animate-pulse' : 'text-slate-300'}`}>
+        <div className={`flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 ${pct < 25 ? 'text-rose-400 animate-pulse border-rose-500/30' : 'text-slate-300'}`}>
             <Clock className="w-4 h-4" />
-            <span className="font-mono font-bold">{Math.floor(t / 60)}:{String(t % 60).padStart(2, '0')}</span>
+            <span className="font-mono font-black text-sm tracking-tighter">
+                {Math.floor(t / 60)}:{String(t % 60).padStart(2, '0')}
+            </span>
         </div>
     );
 };
@@ -40,35 +48,65 @@ const AILoadingOverlay = () => {
     const [msgIdx, setMsgIdx] = useState(0);
 
     useEffect(() => {
-        const i = setInterval(() => setMsgIdx(p => (p + 1) % statuses.length), 1000);
+        const i = setInterval(() => setMsgIdx(p => (p + 1) % statuses.length), 1500);
         return () => clearInterval(i);
     }, []);
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-xl">
-            <div className="relative w-48 h-48 mb-12">
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 rounded-full border-4 border-t-purple-500 border-r-transparent border-b-cyan-500 border-l-transparent opacity-40 shadow-[0_0_50px_rgba(168,85,247,0.3)]" />
-                <motion.div animate={{ rotate: -360 }} transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-4 rounded-full border-4 border-t-pink-500 border-r-transparent border-b-blue-500 border-l-transparent opacity-40" />
-                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
-                    className="absolute inset-16 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.6)]">
-                    <span className="text-4xl">🧠</span>
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-2xl">
+            <div className="relative w-64 h-64 mb-16">
+                <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" />
+                <motion.div 
+                    animate={{ rotate: 360 }} 
+                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 rounded-full border-[3px] border-t-cyan-500 border-r-transparent border-b-purple-500 border-l-transparent opacity-60 shadow-glow-cyan" 
+                />
+                <motion.div 
+                    animate={{ rotate: -360 }} 
+                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-6 rounded-full border-[2px] border-t-rose-500 border-r-transparent border-b-blue-500 border-l-transparent opacity-40" 
+                />
+                <motion.div 
+                    animate={{ scale: [1, 1.15, 1] }} 
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-20 bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-glow-primary"
+                >
+                    <div className="w-12 h-12 bg-white/20 rounded-full backdrop-blur-md flex items-center justify-center">
+                        <BrainCircuit className="w-6 h-6 text-white" />
+                    </div>
                 </motion.div>
-                {[...Array(8)].map((_, i) => (
+                
+                {[...Array(12)].map((_, i) => (
                     <motion.div key={i}
-                        animate={{ opacity: [0, 1, 0], scale: [0.5, 1.5, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-                        style={{ transform: `rotate(${i * 45}deg) translateY(-85px)` }}
-                        className="absolute top-1/2 left-1/2 w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_10px_#22d3ee]" />
+                        animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], y: [0, -20, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+                        style={{ transform: `rotate(${i * 30}deg) translateY(-110px)` }}
+                        className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-cyan-400 rounded-full" 
+                    />
                 ))}
             </div>
-            <motion.h3 key={msgIdx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-cyan-300 text-center px-6">
-                {statuses[msgIdx]}
-            </motion.h3>
-            <p className="text-slate-500 mt-4 text-sm animate-pulse uppercase tracking-[0.2em]">Large Language Model Active</p>
+            <div className="text-center max-w-sm px-8">
+                <AnimatePresence mode="wait">
+                    <motion.h3 
+                        key={msgIdx} 
+                        initial={{ opacity: 0, y: 10 }} 
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="text-2xl font-black text-white mb-4 tracking-tight"
+                    >
+                        {statuses[msgIdx]}
+                    </motion.h3>
+                </AnimatePresence>
+                <div className="flex items-center justify-center gap-3">
+                    <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce" />
+                    <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+                <p className="text-slate-500 mt-8 text-[10px] uppercase font-black tracking-[0.4em] opacity-60">
+                    Quantized Engine V3.5 Active
+                </p>
+            </div>
         </motion.div>
     );
 };
@@ -103,74 +141,41 @@ const AssessmentSetup = ({ onStart }) => {
             raw = MCQ_BANK[cat]?.[topic];
         }
 
-        // Support infinite procedural generators from mcqBank
         if (typeof raw === 'function') {
             bank = raw();
         } else {
             bank = [...(raw || [])];
         }
         
-        // Infinite Combinatoric Generator for any remaining padded questions
         if (bank.length < 10) {
             const needed = 10 - bank.length;
             for (let i = 0; i < needed; i++) {
                 const seed = i + bank.length;
                 if (cat === 'Technical') {
-                    const concepts = ["architecture", "optimization", "error handling", "fundamental principles", "scaling", "security", "data boundaries"];
-                    const actions = ["analyzing", "implementing", "debugging", "designing", "testing", "deploying", "maintaining"];
-                    const tools = ["frameworks", "algorithms", "components", "protocols", "methodologies", "standards", "interfaces"];
-                    
-                    const concept = concepts[seed % concepts.length];
-                    const action = actions[seed % actions.length];
-                    const tool = tools[seed % tools.length];
-                    
-                    const qId = `gen_tech_${branch}_${topic}_${diff}_${seed}_${Date.now()}`;
                     bank.push({
-                        id: qId,
-                        q: `[Q${seed+1}] When ${action} a system involving ${topic} at the ${diff} level, which ${concept} aspect is most critical?`,
+                        id: `gen_${seed}`,
+                        q: `[Q${seed+1}] Which aspect of ${topic} is considered most critical in advanced ${branch} systems?`,
                         options: [
-                            `Proper utilization of ${topic} ${tool}`,
-                            `Ignoring context-specific constraints`,
-                            `Bypassing standard ${concept} protocols`,
-                            `Using deprecated ${tool} for backward compatibility`
+                            `System scale and data consistency`,
+                            `Legacy compatibility modes`,
+                            `Basic syntax formatting`,
+                            `Manual memory management`
                         ].sort(()=>Math.random()-0.5),
-                        answer: `Proper utilization of ${topic} ${tool}`,
-                        topic: topic
-                    });
-                } else if (cat === 'Communication') {
-                    const subjects = ["The manager", "Our team", "She", "The developer", "Someone"];
-                    const verbs = ["completed", "reviewed", "analyzed", "submitted", "presented"];
-                    const objects = ["the report", "the codebase", "the assignment", "the project", "the task"];
-                    
-                    const s = subjects[seed % subjects.length];
-                    const v = verbs[seed % verbs.length];
-                    const o = objects[seed % objects.length];
-                    
-                    bank.push({
-                        id: `gen_com_${topic}_${seed}_${Date.now()}`,
-                        q: `[Q${seed+1}] Grammar Check: Choose the correct phrasing for this sentence.`,
-                        options: [
-                            `${s} correctly ${v} ${o} yesterday.`,
-                            `${s} is correctly ${v} ${o} yesterday.`,
-                            `${s} has correctly ${v} ${o} tomorrow.`,
-                            `${s} correctly ${v} ${o} in next week.`
-                        ].sort(()=>Math.random()-0.5),
-                        answer: `${s} correctly ${v} ${o} yesterday.`,
+                        answer: `System scale and data consistency`,
                         topic: topic
                     });
                 } else {
                      bank.push({
-                        id: `gen_${cat}_${topic}_${seed}_${Date.now()}`,
-                        q: `[Q${seed+1}] What is a key principle of ${topic}?`,
-                        options: [`Correct Option A`, `Option B`, `Option C`, `Option D`].sort(()=>Math.random() - 0.5),
-                        answer: `Correct Option A`,
+                        id: `gen_${seed}`,
+                        q: `[Q${seed+1}] Define a core principle of effective ${topic}.`,
+                        options: [`Standard protocol compliance`, `Ad-hoc implementation`, `Minimal documentation`, `Complexity isolation`].sort(()=>Math.random() - 0.5),
+                        answer: `Standard protocol compliance`,
                         topic: topic
                     });
                 }
             }
         }
         
-        // Proper Fisher-Yates shuffle to guarantee completely random tests
         let shuffled = [...bank];
         for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -183,28 +188,16 @@ const AssessmentSetup = ({ onStart }) => {
     const handleStart = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/assessment/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ category: cat, branch, topic, difficulty: diff })
+            const res = await api.post('/assessment/generate', {
+                category: cat, branch, topic, difficulty: diff
             });
-            const data = await res.json();
-            if (data.status === 'success' && data.questions?.length === 10) {
-                const qs = data.questions.map(q => {
-                    let shuffledOpt = [...q.options];
-                    for (let i = shuffledOpt.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [shuffledOpt[i], shuffledOpt[j]] = [shuffledOpt[j], shuffledOpt[i]];
-                    }
-                    return {...q, options: shuffledOpt};
-                });
-                onStart(qs, cat, topic, diff, branch);
+            const data = res.data;
+            if (data.status === 'success' && data.questions?.length > 0) {
+                onStart(data.questions, cat, topic, diff, branch);
             } else {
-                console.warn("AI generation rejected format, falling back to procedural.", data);
                 onStart(getQuestions(), cat, topic, diff, branch);
             }
         } catch (err) {
-            console.error("API error", err);
             onStart(getQuestions(), cat, topic, diff, branch);
         } finally {
             setLoading(false);
@@ -212,63 +205,105 @@ const AssessmentSetup = ({ onStart }) => {
     };
 
     return (
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-            className="glass-panel p-10 rounded-3xl max-w-2xl mx-auto">
-            <h2 className="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
-                Assessment Hub
-            </h2>
-            <p className="text-slate-400 mb-8">Timed MCQ tests with instant scoring and branch-specific topics.</p>
-            <div className="space-y-6">
+        <motion.div 
+            initial={{ opacity: 0, y: 30 }} 
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-panel p-12 rounded-[4rem] max-w-2xl mx-auto border-white/5 shadow-2xl relative overflow-hidden"
+        >
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-premium-gradient" />
+            <header className="mb-12">
+                <h2 className="text-4xl font-black mb-4 text-slate-900 dark:text-white tracking-tighter">
+                    Practice <span className="hero-gradient">Quizzes</span>
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-lg font-medium max-w-xl">
+                    Sharpen your technical skills with our comprehensive question bank.
+                </p>
+            </header>
+            
+            <div className="space-y-10">
                 <div>
-                    <label className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-3 block">Category</label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4 block">Evaluation Category</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {Object.entries(CATEGORY_MAP).map(([c, cfg]) => (
-                            <button key={c} onClick={() => setCat(c)}
-                                className={`py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all border ${cat === c ? `bg-${cfg.color}-500/20 border-${cfg.color}-500 text-${cfg.color}-300` : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}`}>
-                                <span>{cfg.icon}</span>{c}
+                            <button 
+                                key={c} 
+                                onClick={() => setCat(c)}
+                                className={`group p-6 rounded-[2rem] border transition-all relative overflow-hidden ${
+                                    cat === c 
+                                    ? `bg-${cfg.color}-500/10 border-${cfg.color}-500/40 text-slate-900 dark:text-white shadow-glow-${cfg.color}` 
+                                    : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/20'
+                                }`}
+                            >
+                                <div className={`flex flex-col items-center gap-3 relative z-10 transition-transform group-hover:scale-110`}>
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-current opacity-20`} />
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 scale-125 opacity-100">{cfg.icon}</div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{c}</span>
+                                </div>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {cat === 'Technical' && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                        <label className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-3 block">Engineering Branch</label>
-                        <select value={branch} onChange={(e) => setBranch(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 text-slate-300 p-3 rounded-xl focus:outline-none focus:border-purple-500">
-                            {CATEGORY_MAP.Technical.branches.map(b => (
-                                <option key={b} value={b}>{b}</option>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                    {cat === 'Technical' && (
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 block">Specialization</label>
+                            <select 
+                                value={branch} 
+                                onChange={(e) => setBranch(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 text-slate-900 dark:text-slate-300 p-4 rounded-3xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 font-bold appearance-none cursor-pointer"
+                            >
+                                {CATEGORY_MAP.Technical.branches.map(b => (
+                                    <option key={b} value={b} className="bg-slate-900">{b}</option>
+                                ))}
+                            </select>
+                        </motion.div>
+                    )}
+
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 block">Topic</label>
+                        <select 
+                            value={topic} 
+                            onChange={(e) => setTopic(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 text-slate-900 dark:text-slate-300 p-4 rounded-3xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 font-bold appearance-none cursor-pointer"
+                        >
+                            {availableTopics.map(t => (
+                                <option key={t} value={t} className="bg-slate-900">{t}</option>
                             ))}
                         </select>
                     </motion.div>
-                )}
-
-                <div>
-                    <label className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-3 block">Topic</label>
-                    <select value={topic} onChange={(e) => setTopic(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 text-slate-300 p-3 rounded-xl focus:outline-none focus:border-purple-500">
-                        {availableTopics.map(t => (
-                            <option key={t} value={t}>{t}</option>
-                        ))}
-                    </select>
                 </div>
 
                 {cat === 'Technical' && (
-                    <div>
-                        <label className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-3 block">Difficulty</label>
-                        <div className="grid grid-cols-3 gap-3">
+                    <div className="pt-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 block">Difficulty Level</label>
+                        <div className="grid grid-cols-3 gap-4">
                             {['Beginner', 'Intermediate', 'Advanced'].map(d => (
-                                <button key={d} onClick={() => setDiff(d)}
-                                    className={`py-2.5 rounded-lg text-sm font-semibold transition-all border ${diff === d ? 'bg-purple-500/20 border-purple-500 text-purple-300' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{d}</button>
+                                <button 
+                                    key={d} 
+                                    onClick={() => setDiff(d)}
+                                    className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${
+                                        diff === d 
+                                        ? 'bg-purple-500/10 border-purple-500/50 text-purple-400 shadow-glow-purple' 
+                                        : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/10 hover:text-slate-400'
+                                    }`}
+                                >
+                                    {d}
+                                </button>
                             ))}
                         </div>
                     </div>
                 )}
-                <button onClick={handleStart} disabled={loading}
-                    className={`w-full text-white font-black py-4 rounded-2xl transition-all shadow-xl ${loading ? 'bg-slate-700 animate-pulse text-slate-300' : 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 shadow-purple-500/20'}`}>
-                    {loading ? 'Synthesizing AI Engine... 🧠' : 'Start Assessment 🚀'}
+                
+                <button 
+                    onClick={handleStart} 
+                    disabled={loading}
+                    className="premium-button w-full !py-6 !text-sm group flex items-center justify-center"
+                >
+                    START QUIZ <ChevronRight className="w-5 h-5 ms-2 group-hover:translate-x-1 transition-transform" />
                 </button>
             </div>
+            
             <AnimatePresence>
                 {loading && <AILoadingOverlay />}
             </AnimatePresence>
@@ -281,19 +316,12 @@ const QuizScreen = ({ questions, cat, topic, diff, onFinish }) => {
     const [idx, setIdx] = useState(0);
     const [selected, setSelected] = useState(null);
     const [answered, setAnswered] = useState([]);
-    const TIMER_SECS = 30;
+    const TIMER_SECS = 45;
 
-    if (!questions || questions.length === 0) {
-        return (
-            <div className="max-w-2xl mx-auto glass-panel rounded-3xl p-10 text-center">
-                <p className="text-red-400 font-bold text-xl mb-4">Questions coming soon!</p>
-                <button onClick={() => window.location.reload()} className="bg-slate-800 text-white px-6 py-2 rounded-xl">Go Back</button>
-            </div>
-        );
-    }
+    if (!questions || questions.length === 0) return null;
 
     const q = questions[idx];
-    const isLast = idx === questions.length - 1;
+    const progress = ((idx + 1) / questions.length) * 100;
 
     const handleAnswer = (opt) => {
         if (selected) return;
@@ -304,37 +332,85 @@ const QuizScreen = ({ questions, cat, topic, diff, onFinish }) => {
         const last = idx === questions.length - 1;
         setTimeout(() => {
             if (last) onFinish(newAnswered);
-            else { setIdx(i => i + 1); setSelected(null); }
-        }, 1200);
+            else { 
+                setIdx(i => i + 1); 
+                setSelected(null); 
+            }
+        }, 800);
     };
 
     return (
-        <motion.div key={idx} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }}
-            className="max-w-2xl mx-auto glass-panel rounded-3xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-                <span className="font-bold text-slate-300">Q {idx + 1}/{questions.length} · {q.topic}</span>
+        <div className="max-w-3xl mx-auto">
+            {/* Header Stats */}
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center">
+                        <Terminal className="w-6 h-6 text-cyan-400" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{topic}</p>
+                        <p className="text-slate-900 dark:text-white font-black">Question {idx + 1}<span className="text-slate-500 text-xs"> / {questions.length}</span></p>
+                    </div>
+                </div>
                 <QuizTimer key={idx} duration={TIMER_SECS} onExpire={() => handleAnswer('(Time expired)')} />
             </div>
-            <div className="p-8">
-                <p className="text-lg font-semibold text-slate-100 mb-8 leading-relaxed">{q.q}</p>
-                <div className="space-y-3">
-                    {q.options.map(opt => (
-                        <button key={opt} onClick={() => handleAnswer(opt)} disabled={!!selected}
-                            className={`w-full text-left p-4 rounded-xl font-medium text-sm border transition-all ${selected === opt && opt === q.answer ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                                : selected === opt && opt !== q.answer ? 'bg-red-500/20 border-red-500 text-red-300'
-                                    : selected && opt === q.answer ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
-                                        : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-purple-500/50 hover:bg-purple-500/5'
-                                }`}>
-                            <span className="flex items-center gap-3">
-                                {selected && opt === q.answer && <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
-                                {selected === opt && opt !== q.answer && <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
-                                {opt}
-                            </span>
-                        </button>
-                    ))}
+
+            {/* Question Card */}
+            <motion.div 
+                key={idx} 
+                initial={{ opacity: 0, x: 20 }} 
+                animate={{ opacity: 1, x: 0 }}
+                className="glass-panel rounded-[3.5rem] border-white/5 overflow-hidden shadow-2xl bg-white/[0.02]"
+            >
+                <div className="h-1.5 w-full bg-white/5">
+                    <motion.div 
+                        initial={{ width: 0 }} 
+                        animate={{ width: `${progress}%` }}
+                        className="h-full bg-premium-gradient shadow-glow-cyan" 
+                    />
                 </div>
-            </div>
-        </motion.div>
+                
+                <div className="p-12 sm:p-16">
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-12 leading-tight tracking-tight">
+                        {q.q}
+                    </h3>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        {q.options.map((opt, i) => {
+                            const isCorrect = opt === q.answer;
+                            const isSelected = selected === opt;
+                            const showResult = !!selected;
+
+                            let btnStyle = "bg-white/5 border-white/5 text-slate-600 dark:text-slate-400 hover:border-white/20 hover:bg-white/10";
+                            if (showResult) {
+                                if (isSelected && isCorrect) btnStyle = "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-glow-emerald";
+                                else if (isSelected && !isCorrect) btnStyle = "bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-glow-rose";
+                                else if (isCorrect) btnStyle = "bg-emerald-500/10 border-emerald-500/30 text-emerald-500";
+                            }
+
+                            return (
+                                <motion.button 
+                                    key={opt} 
+                                    whileHover={{ x: showResult ? 0 : 8 }}
+                                    onClick={() => handleAnswer(opt)} 
+                                    disabled={showResult}
+                                    className={`w-full text-left p-6 sm:p-8 rounded-[2rem] font-bold text-base border transition-all flex items-center justify-between ${btnStyle}`}
+                                >
+                                    <span className="flex items-center gap-6">
+                                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black uppercase tracking-widest border border-current opacity-40`}>
+                                            {String.fromCharCode(65 + i)}
+                                        </span>
+                                        {opt}
+                                    </span>
+                                    {showResult && isCorrect && <CheckCircle className="w-6 h-6 text-emerald-400" />}
+                                    {showResult && isSelected && !isCorrect && <XCircle className="w-6 h-6 text-rose-400" />}
+                                </motion.button>
+                            );
+                        })}
+                    </div>
+                </div>
+            </motion.div>
+        </div>
     );
 };
 
@@ -345,35 +421,88 @@ const AssessmentResult = ({ answers, cat, topic, diff, onRetry }) => {
     const weakTopics = [...new Set(answers.filter(a => !a.correct).map(a => a.topic))];
 
     return (
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto space-y-6">
-            <div className="glass-panel p-10 rounded-3xl text-center">
-                <div className={`text-7xl font-black mb-3 ${score >= 70 ? 'text-emerald-400' : score >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>{score}%</div>
-                <p className="text-xl text-white font-bold">{correct}/{answers.length} Correct</p>
-                <p className="text-slate-400 mt-1">{cat} · {topic} · {diff}</p>
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto space-y-10">
+            <div className="glass-panel p-16 rounded-[4rem] text-center border-white/5 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-2 bg-premium-gradient" />
+                <div className="relative z-10">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8">
+                        <Activity className="w-4 h-4 text-cyan-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Results</span>
+                    </div>
+                    
+                    <div className="relative w-48 h-48 mx-auto mb-10 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-cyan-500/10 rounded-full blur-3xl" />
+                        <svg className="w-full h-full -rotate-90">
+                            <circle cx="50%" cy="50%" r="45%" className="fill-none stroke-white/5 stroke-[10px]" />
+                            <motion.circle 
+                                cx="50%" cy="50%" r="45%" 
+                                initial={{ strokeDasharray: "0 1000" }}
+                                animate={{ strokeDasharray: `${score * 2.83} 1000` }}
+                                className={`fill-none stroke-[10px] stroke-current ${score >= 70 ? 'text-emerald-400 shadow-glow-emerald' : score >= 40 ? 'text-cyan-400' : 'text-rose-400'}`}
+                                strokeLinecap="round"
+                            />
+                        </svg>
+                        <div className="absolute">
+                            <span className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">{score}%</span>
+                        </div>
+                    </div>
+
+                    <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Quiz Complete</h2>
+                    <p className="text-slate-500 font-bold mb-10">{correct} of {answers.length} questions correct</p>
+                    
+                    <div className="flex flex-wrap justify-center gap-3">
+                        <span className="bg-white/5 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 border border-white/5">{cat}</span>
+                        <span className="bg-white/5 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 border border-white/5">{topic}</span>
+                        <span className="bg-white/5 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 border border-white/5">{diff}</span>
+                    </div>
+                </div>
             </div>
 
             {weakTopics.length > 0 && (
-                <div className="glass-card p-6 rounded-2xl">
-                    <h3 className="font-bold text-red-400 mb-3 flex items-center gap-2"><AlertCircle className="w-5 h-5" />Topics to Revise</h3>
-                    <div className="flex flex-wrap gap-2">{weakTopics.map(t => <span key={t} className="bg-red-500/10 text-red-400 px-3 py-1 rounded-full text-sm border border-red-500/20">{t}</span>)}</div>
-                </div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                    className="glass-panel p-10 rounded-[3rem] border border-rose-500/20 shadow-xl bg-rose-500/[0.02]">
+                    <h3 className="text-rose-500 font-black mb-8 flex items-center gap-4 uppercase tracking-[0.2em] text-xs">
+                        <AlertCircle className="w-5 h-5" /> Areas for Review
+                    </h3>
+                    <div className="flex flex-wrap gap-3">
+                        {weakTopics.map(t => (
+                            <span key={t} className="bg-rose-500/10 text-rose-400 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-rose-500/20">
+                                {t}
+                            </span>
+                        ))}
+                    </div>
+                </motion.div>
             )}
 
-            <div className="glass-card p-6 rounded-2xl space-y-3 max-h-72 overflow-y-auto">
+            <div className="glass-panel p-8 rounded-[3rem] border-white/5 space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 px-4">Detailed Log</h3>
                 {answers.map((a, i) => (
-                    <div key={i} className={`flex items-start gap-3 p-3 rounded-xl ${a.correct ? 'bg-emerald-500/5' : 'bg-red-500/5'}`}>
-                        {a.correct ? <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />}
+                    <div key={i} className={`flex items-start gap-6 p-6 rounded-[2rem] border transition-all ${a.correct ? 'bg-emerald-500/[0.03] border-emerald-500/10' : 'bg-rose-500/[0.03] border-rose-500/10'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${a.correct ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                            {a.correct ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                        </div>
                         <div>
-                            <p className="text-xs text-slate-300">{a.question}</p>
-                            {!a.correct && <p className="text-xs text-emerald-400 mt-1">Correct: {a.correctAnswer}</p>}
+                            <p className="text-slate-900 dark:text-slate-200 font-bold mb-3 leading-snug">{a.question}</p>
+                            {!a.correct && (
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] uppercase font-black tracking-widest text-rose-400/60">Correct Answer:</span>
+                                    <span className="text-emerald-500 font-black text-sm">{a.correctAnswer}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
             </div>
 
-            <button onClick={onRetry}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white font-bold py-4 rounded-2xl hover:from-purple-400 hover:to-pink-500 transition-all">
-                Try Another Test
+            <button 
+                onClick={onRetry}
+                className="w-full relative group p-6 rounded-[2rem] bg-slate-900 dark:bg-white text-white dark:text-slate-900 overflow-hidden shadow-2xl"
+            >
+                <div className="absolute inset-0 bg-premium-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative z-10 flex items-center justify-center gap-4">
+                    <span className="text-[11px] font-black uppercase tracking-[0.4em]">Retake Quiz</span>
+                    <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-700" />
+                </div>
             </button>
         </motion.div>
     );
@@ -386,23 +515,40 @@ const AssessmentHub = () => {
     const [meta, setMeta] = useState({});
     const [answers, setAnswers] = useState([]);
 
-    const handleStart = (qs, cat, topic, diff, branch) => { setQuestions(qs); setMeta({ cat, topic, diff, branch }); setPhase('quiz'); };
-    const handleFinish = (ans) => { setAnswers(ans); setPhase('result'); };
-    const handleRetry = () => { setPhase('setup'); setAnswers([]); };
+    const handleStart = (qs, cat, topic, diff, branch) => { 
+        setQuestions(qs); 
+        setMeta({ cat, topic, diff, branch }); 
+        setPhase('quiz'); 
+    };
+    
+    const handleFinish = (ans) => { 
+        setAnswers(ans); 
+        setPhase('result'); 
+    };
+    
+    const handleRetry = () => { 
+        setPhase('setup'); 
+        setAnswers([]); 
+    };
 
     return (
-        <div className="min-h-screen p-8">
-            <div className="max-w-3xl mx-auto">
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 mb-3">
-                        Placement Assessment Hub
-                    </h1>
-                    <p className="text-slate-400">Technical · Aptitude · Communication — with instant weak-topic analysis</p>
+        <div className="min-h-screen pt-60 pb-20 px-6 relative overflow-visible">
+            {/* Ambient Background */}
+            <div className="blob blob-1 opacity-20"></div>
+            <div className="blob blob-2 opacity-20"></div>
+
+            <div className="max-w-4xl mx-auto relative z-10">
+                <div className="text-center mb-16">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/5 border border-purple-500/10 mb-6 group hover:border-purple-500/30 transition-all cursor-default">
+                        <Layers className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-500">Skill Assessment</span>
+                    </div>
                 </div>
+                
                 <AnimatePresence mode="wait">
-                    {phase === 'setup' && <AssessmentSetup onStart={handleStart} />}
-                    {phase === 'quiz' && <QuizScreen questions={questions} {...meta} onFinish={handleFinish} />}
-                    {phase === 'result' && <AssessmentResult answers={answers} {...meta} onRetry={handleRetry} />}
+                    {phase === 'setup' && <AssessmentSetup onStart={handleStart} key="setup" />}
+                    {phase === 'quiz' && <QuizScreen questions={questions} {...meta} onFinish={handleFinish} key="quiz" />}
+                    {phase === 'result' && <AssessmentResult answers={answers} {...meta} onRetry={handleRetry} key="result" />}
                 </AnimatePresence>
             </div>
         </div>
