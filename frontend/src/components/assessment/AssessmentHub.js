@@ -149,32 +149,47 @@ const AssessmentSetup = ({ onStart }) => {
         
         if (bank.length < 10) {
             const needed = 10 - bank.length;
+            const genericPrompts = [
+                `Which aspect of ${topic} is considered most critical in advanced ${branch} systems?`,
+                `In a professional ${branch} environment, how would you best implement ${topic}?`,
+                `What is the primary trade-off when optimizing ${topic} for high-performance ${branch} applications?`,
+                `Which design pattern is most commonly associated with ${topic} in ${branch}?`,
+                `Identify the core vulnerability or bottleneck often found in standard ${topic} implementations.`,
+                `How does ${topic} interact with other core ${branch} modules during peak load?`,
+                `What is the industry standard approach for testing ${topic} components?`,
+                `Which version or evolution of ${topic} introduced the most significant shift in ${branch} methodology?`,
+                `In terms of scalability, what is the biggest challenge with ${topic}?`,
+                `What is the recommended best practice for securing ${topic} data in ${branch}?`
+            ];
+            
             for (let i = 0; i < needed; i++) {
                 const seed = i + bank.length;
+                const questionText = genericPrompts[i % genericPrompts.length];
                 if (cat === 'Technical') {
                     bank.push({
                         id: `gen_${seed}`,
-                        q: `[Q${seed+1}] Which aspect of ${topic} is considered most critical in advanced ${branch} systems?`,
+                        q: `[Fallback] ${questionText}`,
                         options: [
-                            `System scale and data consistency`,
-                            `Legacy compatibility modes`,
-                            `Basic syntax formatting`,
-                            `Manual memory management`
+                            `Scalability and efficiency`,
+                            `Legacy compatibility`,
+                            `Standard protocol compliance`,
+                            `Complexity isolation`
                         ].sort(()=>Math.random()-0.5),
-                        answer: `System scale and data consistency`,
+                        answer: `Scalability and efficiency`,
                         topic: topic
                     });
                 } else {
                      bank.push({
                         id: `gen_${seed}`,
-                        q: `[Q${seed+1}] Define a core principle of effective ${topic}.`,
-                        options: [`Standard protocol compliance`, `Ad-hoc implementation`, `Minimal documentation`, `Complexity isolation`].sort(()=>Math.random() - 0.5),
-                        answer: `Standard protocol compliance`,
+                        q: `[Fallback] Define a core principle of effective ${topic} management.`,
+                        options: [`Resource optimization`, `Ad-hoc implementation`, `Minimal documentation`, `Strict isolation`].sort(()=>Math.random() - 0.5),
+                        answer: `Resource optimization`,
                         topic: topic
                     });
                 }
             }
         }
+
         
         let shuffled = [...bank];
         for (let i = shuffled.length - 1; i > 0; i--) {
@@ -193,16 +208,24 @@ const AssessmentSetup = ({ onStart }) => {
             });
             const data = res.data;
             if (data.status === 'success' && data.questions?.length > 0) {
-                onStart(data.questions, cat, topic, diff, branch);
+                // Add isAI flag to questions
+                const aiQs = data.questions.map(q => ({ ...q, isAI: true }));
+                onStart(aiQs, cat, topic, diff, branch);
             } else {
-                onStart(getQuestions(), cat, topic, diff, branch);
+                console.warn("AI generation returned success but no questions. Falling back to static bank.");
+                const fallbackQs = getQuestions().map(q => ({ ...q, isAI: false }));
+                onStart(fallbackQs, cat, topic, diff, branch);
             }
         } catch (err) {
-            onStart(getQuestions(), cat, topic, diff, branch);
+            console.error("AI Generation Failed:", err);
+            const fallbackQs = getQuestions().map(q => ({ ...q, isAI: false }));
+            onStart(fallbackQs, cat, topic, diff, branch);
         } finally {
             setLoading(false);
         }
     };
+
+
 
     return (
         <motion.div 
@@ -348,7 +371,12 @@ const QuizScreen = ({ questions, cat, topic, diff, onFinish }) => {
                         <Terminal className="w-6 h-6 text-cyan-400" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{topic}</p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            {topic}
+                            {q.isAI && (
+                                <span className="bg-cyan-500/10 text-cyan-500 px-2 py-0.5 rounded-md text-[8px] animate-pulse">AI POWERED (GROQ)</span>
+                            )}
+                        </p>
                         <p className="text-slate-900 dark:text-white font-black">Question {idx + 1}<span className="text-slate-500 text-xs"> / {questions.length}</span></p>
                     </div>
                 </div>
@@ -408,10 +436,16 @@ const QuizScreen = ({ questions, cat, topic, diff, onFinish }) => {
                             );
                         })}
                     </div>
+                    {!q.isAI && (
+                        <p className="mt-8 text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center opacity-60">
+                            Offline Mode Active • Dynamic AI generation failed or was bypassed
+                        </p>
+                    )}
                 </div>
             </motion.div>
         </div>
     );
+
 };
 
 // ── Results Screen ──

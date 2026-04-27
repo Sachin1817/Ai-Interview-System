@@ -25,12 +25,16 @@ def generate_ai_response(prompt, model_id="llama-3.3-70b-versatile", retries=3, 
             chat_completion = client.chat.completions.create(
                 messages=[
                     {
+                        "role": "system",
+                        "content": "You are a highly creative and precise AI assistant. Always provide unique, varied, and non-repetitive content. Avoid standard textbook examples unless specifically asked."
+                    },
+                    {
                         "role": "user",
                         "content": prompt,
                     }
                 ],
                 model=model_id,
-                temperature=0.7,
+                temperature=0.85,
                 max_tokens=4096,
             )
             
@@ -69,7 +73,7 @@ def generate_chat_completion(messages, model_id="llama-3.3-70b-versatile", retri
             chat_completion = client.chat.completions.create(
                 messages=messages,
                 model=model_id,
-                temperature=0.7,
+                temperature=0.85,
                 max_tokens=4096,
             )
             

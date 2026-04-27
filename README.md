@@ -6,11 +6,17 @@ An intelligent, multi-service platform designed to revolutionize the career jour
 
 ## 🌟 Key Features
 
-### 1. **Pro-Interactive Career Mentor (New)**
+### 1. **Pro-Interactive Multilingual Voice Mentor (New)**
 - **Global Floating Workspace**: Accessible from any page with a professional **600px x 750px** interactive interface.
+- **Multi-Language Support**: Full communication support for 9+ languages (English, Hindi, Telugu, Tamil, **Kannada**, Malayalam, Marathi, Bengali, and Gujarati).
+- **Voice-to-Voice Interaction**: 
+    - **Smart STT**: High-accuracy Speech-to-Text with real-time visual audio bars.
+    - **Auto-Submit**: Voice recognition automatically triggers AI responses once you finish speaking.
+    - **High-Quality TTS**: Automated Text-to-Speech responses tailored to the selected language's locale.
 - **Multi-Turn Memory**: Built-in conversation logs allow the mentor to remember your history and guide you step-by-step.
 - **High-Clarity Mentoring**: Strictly formatted **points-wise** responses with emojis and double-spacing for maximum readability.
 - **Interactive Methodology**: The AI doesn't just talk—it asks follow-up questions to understand your goals.
+
 
 ### 2. **Groq-Powered Resume Hub**
 - **Deep Analysis**: Near-instant resume diagnosis powered by **Llama 3.3-70b** via Groq Cloud.

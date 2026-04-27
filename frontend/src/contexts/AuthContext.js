@@ -51,10 +51,8 @@ export const AuthProvider = ({ children }) => {
             setCurrentUser(user);
             setLoading(false);
             if (user) {
-                // Optionally store token for backend validation
-                user.getIdToken().then(token => {
-                    localStorage.setItem('token', token);
-                });
+                // We handle backend tokens explicitly during login/sync.
+                // We only store the basic user info here for immediate UI availability.
                 localStorage.setItem('user', JSON.stringify({
                     email: user.email,
                     uid: user.uid,

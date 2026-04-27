@@ -23,10 +23,22 @@ def register():
     if not password and not firebase_uid:
         return jsonify({"message": "Missing authentication identifier (password or firebaseUid)"}), 400
 
-    if users_col.find_one({"email": email}):
+    existing_user = users_col.find_one({"email": email})
+    if existing_user:
         # If user exists, just return success if it's a Firebase sync
         if firebase_uid:
-             return jsonify({"message": "User already exists", "status": "synced"}), 200
+             token = generate_token(existing_user['_id'])
+             return jsonify({
+                "token": token, 
+                "user": {
+                    "id": str(existing_user['_id']), 
+                    "name": existing_user['name'], 
+                    "email": existing_user['email'], 
+                    "branch": existing_user.get('branch', 'CSE'),
+                    "firebaseUid": firebase_uid
+                },
+                "status": "synced"
+             }), 200
         return jsonify({"message": "User already exists"}), 400
 
     user_data = {

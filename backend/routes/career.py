@@ -138,10 +138,12 @@ def career_assistant_chat():
     role = data.get("predictedRole", "")
     hiring_level = data.get("hiringLevel", "")
     branch = data.get("branch", "General")
-    history = data.get("history", []) # NEW: Get full history
+    history = data.get("history", [])
+    language = data.get("language", "English")
     
     if not message:
         return jsonify({"error": "Message required"}), 400
         
-    result = chat_with_career_assistant(message, skills, branch, role, hiring_level, history)
+    result = chat_with_career_assistant(message, skills, branch, role, hiring_level, history, language)
     return jsonify(result), 200
+

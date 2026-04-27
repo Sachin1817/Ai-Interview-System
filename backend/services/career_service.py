@@ -428,10 +428,10 @@ def match_job_with_ai(job, user_skills, resume_score=0):
         }
 from .ai_service import generate_ai_response, generate_chat_completion
 
-def chat_with_career_assistant(message, user_skills=None, branch="General", role=None, hiring_level=None, history=None):
+def chat_with_career_assistant(message, user_skills=None, branch="General", role=None, hiring_level=None, history=None, language="English"):
     """
     Generate a helpful, conversational, and interactive response for the career assistant.
-    Maintains memory by processing previous message history.
+    Maintains memory by processing previous message history and respects language selection.
     """
     try:
         skills_str = ", ".join(user_skills) if user_skills else "General student"
@@ -445,22 +445,19 @@ def chat_with_career_assistant(message, user_skills=None, branch="General", role
         - Engineering Branch: {branch}
         - Current Skills: {skills_str}
         - Targeted Role: {role or 'Exploring'}
+        - PREFERRED LANGUAGE: {language}
 
         STRICT RESPONSE RULES:
-        1. **Points-Wise Only**: Never write long paragraphs. Use clear bullet points (•) for every piece of advice.
-        2. **Visual Gaps**: Use **double line breaks** (\n\n) between every point and every section to ensure the view isn't "congested."
-        3. **Emoji Rich**: Use 1-2 relevant emojis (🚀, 💡, 🎯, 🎓, 💻) in every response to make it engaging.
-        4. **Interactive Curiosity**: End every response with a **short, easy follow-up question**.
-        5. **No Formal Fluff**: Skip formal introductions like "I'm here to help." Jump straight to the points.
-        6. **Simple Language**: Use short, punchy sentences. Avoid complex grammar.
+        1. **Language**: You MUST respond in {language}. If {language} is not English, you can still use English for technical terms (like 'React', 'Cloud', 'Data Structures') but the surrounding explanation must be in {language}.
+        2. **Points-Wise Only**: Never write long paragraphs. Use clear bullet points (•) for every piece of advice.
+        3. **Visual Gaps**: Use **double line breaks** (\n\n) between every point and every section.
+        4. **Emoji Rich**: Use 1-2 relevant emojis (🚀, 💡, 🎯, 🎓, 💻) in every response.
+        5. **Interactive Curiosity**: End every response with a **short, easy follow-up question in {language}**.
+        6. **No Formal Fluff**: Skip formal introductions. Jump straight to the points.
 
-        EXAMPLE STYLE:
-        • 🚀 For **CSE**, I recommend looking into **React** or **Backend APIs**! \n\n
-        • 💡 You already have {skills_str}, which is a massive head start. \n\n
-        • 🎓 Should we look at specific certifications or project ideas first?
-
-        Respond as the Mentor. Points-wise, clear, with gaps and emojis.
+        Respond as the Mentor in {language}.
         """
+
 
         # 2. Build the message list for the AI
         messages = [{"role": "system", "content": system_prompt}]

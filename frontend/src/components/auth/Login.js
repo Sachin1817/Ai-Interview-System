@@ -16,6 +16,7 @@ const GoogleIcon = () => (
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { authAPI } from '../../services/api';
 
 const schema = yup.object({
     email: yup.string().email('Invalid email').required('Email is required'),
@@ -47,6 +48,21 @@ const Login = () => {
                 return;
             }
 
+            // Sync with backend to get a valid backend JWT
+            try {
+                const response = await authAPI.login({
+                    email: data.email,
+                    password: data.password
+                });
+                
+                if (response.data && response.data.token) {
+                    localStorage.setItem('token', response.data.token);
+                    localStorage.setItem('user', JSON.stringify(response.data.user));
+                }
+            } catch (syncErr) {
+                console.warn("Backend login sync failed", syncErr);
+            }
+
             navigate('/');
         } catch (err) {
             console.error("Login error:", err);
@@ -65,7 +81,28 @@ const Login = () => {
         setLoading(true);
         setError('');
         try {
-            await loginWithGoogle();
+            const userCredential = await loginWithGoogle();
+            const user = userCredential.user;
+
+            // Sync with backend to get a valid backend JWT
+            try {
+                const response = await authAPI.register({
+                    name: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    branch: 'CSE', // Default branch for Google users
+                    firebaseUid: user.uid
+                });
+                
+                if (response.data && response.data.token) {
+                    localStorage.setItem('token', response.data.token);
+                    localStorage.setItem('user', JSON.stringify(response.data.user));
+                }
+            } catch (syncErr) {
+                console.warn("Backend sync failed after Google Login", syncErr);
+                // Even if sync fails, we might still have a Firebase user, 
+                // but features requiring backend will be limited to guest mode.
+            }
+
             navigate('/');
         } catch (err) {
             setError('Google sign-in failed.');

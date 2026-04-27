@@ -125,12 +125,13 @@ def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n
         - Branch: {branch}
         - Target Role: {role or 'General Engineer'}
         - Difficulty: {difficulty}
-        - Session ID: {random_seed}
+        - Diversity Seed: {random_seed}
         
-        Requirements:
-        1. Contextual Questions: Each question must be 2-3 sentences long with context.
-        2. Role Specific: High relevance to {role}.
-        3. Structure: {n-1} Technical questions, 1 Behavioral question.
+        Requirements (Unique & Diverse):
+        1. Contextual & Unique: Each question must be 2-3 sentences long with a unique scenario. Avoid generic "What is X" questions.
+        2. Role Deep-Dive: High relevance to {role}. Focus on real-world applications and problem-solving.
+        3. No Repetition: Do not repeat concepts across questions. Ensure a wide coverage of {branch} and {role} topics.
+        4. Structure: {n-1} Technical questions, 1 Behavioral/Scenario question.
         
         Output format:
         [

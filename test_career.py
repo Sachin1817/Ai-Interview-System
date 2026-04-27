@@ -5,7 +5,7 @@ import json
 # Add backend to path
 sys.path.append(os.path.join(os.getcwd(), 'backend'))
 
-from services.career_service import get_career_advice
+from services.career_service import get_career_advice  # type: ignore
 
 def test_career_advice():
     print("Testing AI Career Advice with Groq...")

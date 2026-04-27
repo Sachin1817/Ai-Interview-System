@@ -24,12 +24,19 @@ class CodingService:
         """
         Dynamically generates a coding challenge using Groq AI based on role and difficulty.
         """
+        import uuid
+        random_seed = uuid.uuid4().hex
+        
         prompt = f"""
-        Generate a professional coding interview challenge for the following profile:
+        Generate a unique and creative professional coding interview challenge for the following profile:
         Role: {role}
         Difficulty: {difficulty}
+        Session ID: {random_seed}
         
         The challenge should be realistic and test core skills relevant to the role at the specified difficulty level.
+        
+        CRITICAL: Avoid common or cliché problems (like basic 'Login Forms' or 'FizzBuzz'). 
+        Create a scenario-based problem that is unique to this session.
         
         Difficulty Guidelines:
         - Easy: Basic syntax, loops, and simple logic.
