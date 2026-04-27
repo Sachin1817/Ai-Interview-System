@@ -125,9 +125,12 @@ const JobCard = ({ job, userSkills, resumeScore }) => {
                 <div className="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase flex items-center gap-1">
                     <CheckCircle2 className="w-2.5 h-2.5" /> Verified Active
                 </div>
-                {job.days_remaining !== undefined && (
-                    <div className="text-[9px] font-bold text-slate-500">
-                        Deadline: <span className={job.is_closing_soon ? 'text-red-400' : 'text-slate-300'}>{job.deadline}</span>
+                <div className="text-[9px] font-bold text-slate-500">
+                    Posted: <span className="text-slate-300">{job.postedDate}</span>
+                </div>
+                {job.salary && (
+                    <div className="text-[9px] font-bold text-slate-500 ml-auto">
+                        Salary: <span className="text-emerald-400">{job.salary}</span>
                     </div>
                 )}
             </div>
@@ -218,6 +221,7 @@ const CareerAdvisor = () => {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadingJobs, setLoadingJobs] = useState(false);
+    const [jobError, setJobError] = useState(false);
     const [error, setError] = useState('');
     const [branch, setBranch] = useState('CSE');
     const [mode, setMode] = useState('select'); // 'select' | 'result'
@@ -244,14 +248,16 @@ const CareerAdvisor = () => {
             fetchJobs(data.branch, data.best_role, data.top_roles?.[0]?.matched_skills || []);
             
         } catch (e) {
+            console.warn("Primary advice fetch failed, trying fallback...", e);
             // Fallback: generate locally from branch
             try {
                 const res = await api.post('/career/advice/branch', { branch, skills: [] });
                 setAdvice(res.data);
                 setMode('result');
                 fetchJobs(res.data.branch, res.data.best_role);
-            } catch {
-                setError('Could not load advice. Make sure the backend is running.');
+            } catch (err) {
+                console.error("Career advice fallback error", err);
+                setError(`Could not load advice: ${err.message}. Check if backend is running on port 5000.`);
             }
         } finally {
             setLoading(false);
@@ -260,6 +266,7 @@ const CareerAdvisor = () => {
 
     const fetchJobs = async (userBranch, userRole, userSkills) => {
         setLoadingJobs(true);
+        setJobError(false);
         try {
             // Get user location from local profile info if it exists
             const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
@@ -271,9 +278,16 @@ const CareerAdvisor = () => {
                 skills: userSkills,
                 location: location 
             });
-            setJobs(res.data);
+
+            if (res.data && res.data.error === "API_FAILED") {
+                setJobError(true);
+                setJobs([]);
+            } else {
+                setJobs(Array.isArray(res.data) ? res.data : []);
+            }
         } catch (e) {
             console.error("Job fetch error", e);
+            setJobError(true);
         } finally {
             setLoadingJobs(false);
         }
@@ -440,6 +454,11 @@ const CareerAdvisor = () => {
                                             resumeScore={advice.top_roles?.[0]?.match_percentage || 0}
                                         />
                                     ))}
+                                </div>
+                            ) : jobError ? (
+                                <div className="glass-panel p-12 rounded-3xl text-center border-dashed border-red-500/20">
+                                    <div className="text-3xl mb-4">⚠️</div>
+                                    <p className="text-red-400">Unable to load job listings. Please try again later.</p>
                                 </div>
                             ) : (
                                 <div className="glass-panel p-12 rounded-3xl text-center border-dashed border-white/10">

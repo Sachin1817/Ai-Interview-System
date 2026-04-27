@@ -251,6 +251,7 @@ def get_career_advice(branch, skills, assessment_score=None):
         
         raw_text = generate_ai_response(prompt)
         if not raw_text:
+            print("LOG [CareerService]: AI returned empty text for advice.")
             raise ValueError("AI failed to return career advice")
             
         advice = _clean_json_response(raw_text)
@@ -259,10 +260,11 @@ def get_career_advice(branch, skills, assessment_score=None):
             advice["branch"] = branch
             return advice
             
+        print(f"LOG [CareerService]: Failed to parse JSON from AI response. Raw text snippet: {raw_text[:100]}...")
         raise ValueError("Failed to parse AI career advice JSON")
 
     except Exception as e:
-        print(f"AI Career Advice Error: {e}. Falling back to static logic.")
+        print(f"LOG [CareerService]: AI Error: {e}. Falling back to static logic.")
         # FALLBACK to static logic if AI fails
         branch_data = BRANCH_CAREER_MAP.get(branch, BRANCH_CAREER_MAP.get("CSE"))
         skills_lower = [s.lower() for s in skills]
@@ -316,63 +318,93 @@ def get_career_advice(branch, skills, assessment_score=None):
 
 def get_job_recommendations(branch, role=None, user_skills=None, location=None):
     """
-    Fetch relevant job opportunities from the database with location prioritization.
-    Filters for verified active status and future deadlines.
+    Fetch relevant job opportunities from SerpApi (Google Jobs) dynamically.
+    Integrates live listings based on role and location.
     """
-    today = datetime.date.today().isoformat()
+    import requests
+    import os
     
-    # 1. Base Query: Only active and future deadlines
-    query = {
-        "status": {"$ne": "expired"},
-        "deadline": {"$gte": today}
+    api_key = os.getenv("SERP_API_KEY")
+    if not api_key:
+        print("LOG: SERP_API_KEY not found in environment")
+        return []
+
+    # Use Best Fit Role if provided, else fallback to branch
+    search_role = role if role else f"{branch} Developer"
+    search_location = location if location else "India"
+
+    print(f"LOG: Role used: {search_role}")
+    print(f"LOG: Location used: {search_location}")
+
+    params = {
+        "engine": "google_jobs",
+        "q": search_role,
+        "location": search_location,
+        "api_key": api_key
     }
 
-    if role:
-        query["role"] = {"$regex": role, "$options": "i"}
-    elif branch:
-        query["title"] = {"$regex": branch, "$options": "i"}
-
-    # Fetch all relevant jobs
-    all_jobs = list(jobs_col.find(query))
-    
-    # 2. Prioritize: State match first, then rest
-    def sort_score(job):
-        score = 0
-        if location:
-            # Simple state-level match (e.g., "Bangalore, India" matches "Karnataka")
-            # Improved: check if state name (user location) is in job location
-            if location.lower() in job.get("location", "").lower():
-                score += 100
-        
-        # Closing soon priority (next 48h)
-        deadline = job.get("deadline", "")
-        if deadline:
-            try:
-                days_left = (datetime.date.fromisoformat(deadline) - datetime.date.today()).days
-                if days_left <= 2:
-                    score += 50
-            except:
-                pass
-        return score
-
-    all_jobs.sort(key=sort_score, reverse=True)
-    
-    # If no specific matches, get general active ones
-    if not all_jobs:
-        all_jobs = list(jobs_col.find({"deadline": {"$gte": today}}).limit(10))
-
-    # Format for frontend
-    for j in all_jobs:
-        j["_id"] = str(j["_id"])
-        # Add deadline status
+    max_retries = 2
+    for attempt in range(max_retries + 1):
         try:
-            days_left = (datetime.date.fromisoformat(j["deadline"]) - datetime.date.today()).days
-            j["is_closing_soon"] = days_left <= 2
-            j["days_remaining"] = days_left
-        except:
-            j["is_closing_soon"] = False
+            # 5 second timeout requirement
+            response = requests.get("https://serpapi.com/search.json", params=params, timeout=5)
+            print(f"LOG: API response status: {response.status_code} (Attempt {attempt + 1})")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if "error" in data:
+                    print(f"LOG: SerpApi Error in response: {data['error']}")
+                    return {"error": "API_FAILED"}
+                
+                jobs_results = data.get("jobs_results", [])
+                print(f"LOG: Found {len(jobs_results)} raw results")
+
+                if not jobs_results:
+                    return []
+
+                formatted_jobs = []
+                for job in jobs_results:
+                    # Extract job type and posted date from extensions
+                    extensions = job.get("extensions", [])
+                    detected = job.get("detected_extensions", {})
+                    
+                    job_type = "Full-time" 
+                    posted_date = detected.get("posted_at") or next((ext for ext in extensions if "ago" in ext.lower() or "yesterday" in ext.lower()), "Recently")
+                    salary = detected.get("salary")
+                    
+                    for ext in extensions:
+                        if any(x in ext.lower() for x in ["time", "internship", "contract"]):
+                            job_type = ext
+                        if not salary and any(x in ext.lower() for x in ["a year", "an hour", "a month"]):
+                            salary = ext
+
+                    formatted_jobs.append({
+                        "_id": job.get("job_id", os.urandom(8).hex()),
+                        "title": job.get("title"),
+                        "company": job.get("company_name"),
+                        "location": job.get("location"),
+                        "jobType": job_type,
+                        "postedDate": posted_date,
+                        "salary": salary,
+                        "applyLink": job.get("related_links", [{}])[0].get("link") if job.get("related_links") else job.get("share_link"),
+                        "skills": [], 
+                        "description": job.get("description", ""),
+                        "is_external": True
+                    })
+
+                return formatted_jobs[:5] # Limit to 5 results
+            
+            # If status not 200, retry
+            continue
+
+        except Exception as e:
+            print(f"LOG: SerpApi Error on attempt {attempt + 1}: {e}")
+            if attempt == max_retries:
+                return {"error": "API_FAILED"}
     
-    return all_jobs[:8]
+    return {"error": "API_FAILED"}
+
 
 def match_job_with_ai(job, user_skills, resume_score=0):
     """

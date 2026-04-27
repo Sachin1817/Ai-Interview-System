@@ -1,22 +1,20 @@
 # 🤖 AI Career Pro: Unified Interview & Mentor System
 
-An intelligent, multi-service platform designed to revolutionize the career journey through **Groq Cloud AI**. This system integrates high-performance AI-driven interview preparation, ATS-optimized resume analysis, and a global interactive career mentor.
+An intelligent, multi-service platform designed to revolutionize the career journey through **Groq Cloud AI**. This system integrates high-performance AI-driven interview preparation, ATS-optimized resume analysis, and a global interactive career mentor with real-time job searching capabilities.
 
 ---
 
 ## 🌟 Key Features
 
-### 1. **Pro-Interactive Multilingual Voice Mentor (New)**
+### 1. **Pro-Interactive Multilingual Voice Mentor**
 - **Global Floating Workspace**: Accessible from any page with a professional **600px x 750px** interactive interface.
-- **Multi-Language Support**: Full communication support for 9+ languages (English, Hindi, Telugu, Tamil, **Kannada**, Malayalam, Marathi, Bengali, and Gujarati).
+- **Multi-Language Support**: Full communication support for 9+ languages (English, Hindi, Telugu, Tamil, Kannada, Malayalam, Marathi, Bengali, and Gujarati).
 - **Voice-to-Voice Interaction**: 
     - **Smart STT**: High-accuracy Speech-to-Text with real-time visual audio bars.
     - **Auto-Submit**: Voice recognition automatically triggers AI responses once you finish speaking.
     - **High-Quality TTS**: Automated Text-to-Speech responses tailored to the selected language's locale.
 - **Multi-Turn Memory**: Built-in conversation logs allow the mentor to remember your history and guide you step-by-step.
 - **High-Clarity Mentoring**: Strictly formatted **points-wise** responses with emojis and double-spacing for maximum readability.
-- **Interactive Methodology**: The AI doesn't just talk—it asks follow-up questions to understand your goals.
-
 
 ### 2. **Groq-Powered Resume Hub**
 - **Deep Analysis**: Near-instant resume diagnosis powered by **Llama 3.3-70b** via Groq Cloud.
@@ -26,18 +24,18 @@ An intelligent, multi-service platform designed to revolutionize the career jour
 
 ### 3. **AI Interview Simulation**
 - **Dynamic Questioner**: Real-time interview simulator with role-specific technical question generation.
-- **Live Assessment**: Immediate feedback on responses with automated scoring.
+- **Live Assessment**: Immediate feedback on responses with automated scoring and detailed feedback.
 
-### 4. **AI Coding Interview Engine (New)**
+### 4. **AI Coding Interview Engine**
 - **Dynamic AI Generation**: Uses **Groq AI** to generate unique coding challenges based on the selected role.
 - **Difficulty Selection**: Support for **Easy, Medium, and Hard** difficulty levels to match candidate seniority.
 - **Universal Code Execution**: Real-time execution support for **Python, JavaScript, Java, C++, and Bash** with security timeouts.
 - **Automated AI Grading**: Detailed performance reports analyzing code quality, logic, and efficiency.
 
-### 5. **Smart Dashboard & Profile**
-- **Animated Experience**: Fluid, premium UI built with **Framer Motion** and **Tailwind CSS**.
-- **Data-Driven Tracking**: Visualize your preparation progress with **Chart.js**.
-- **Secure Management**: Authentication and centralized profile storage via **Firebase**.
+### 5. **Live Job Recommendations (New)**
+- **SerpApi Integration**: Real-time job listings fetched directly from Google Jobs.
+- **Smart Matching**: AI-driven analysis to match your skills with live job requirements.
+- **Direct Apply**: One-click access to application portals for matching roles.
 
 ---
 
@@ -52,6 +50,7 @@ An intelligent, multi-service platform designed to revolutionize the career jour
 ### **Python Backend (AI & Interview Logic)**
 - **Flask**: Micro-framework handling career mentoring and interview assessment.
 - **Groq Cloud SDK**: Powering all conversational AI and deep analysis.
+- **SerpApi**: Dynamic job search integration for live market data.
 - **Execution Service**: Custom isolated subprocess-based runner for multi-language code assessment.
 - **Spacy**: Natural Language Processing for resume text parsing.
 - **MongoDB**: For storing career tracking data, coding submissions, and progress.
@@ -71,6 +70,7 @@ An intelligent, multi-service platform designed to revolutionize the career jour
 - **Python** (3.9+)
 - **MongoDB** (Local or Atlas)
 - **Groq API Key** (Get it at [Groq Console](https://console.groq.com/))
+- **SerpApi Key** (Get it at [SerpApi](https://serpapi.com/))
 
 ### **Installation & Setup**
 
@@ -90,6 +90,7 @@ pip install -r requirements.txt
 Create `backend/.env`:
 ```env
 GROQ_API_KEY=your_groq_key_here
+SERP_API_KEY=your_serp_api_key_here
 PORT=5000
 MONGO_URI=mongodb://localhost:27017/ai_placement_db
 ```
@@ -109,6 +110,7 @@ PORT=5001
 ```bash
 cd ../frontend
 npm install
+npm start
 ```
 
 ---
@@ -127,8 +129,8 @@ To run the complete system, start the following in separate terminals:
 ```text
 ├── frontend/             # High-End React Interface
 │   └── src/components/   # Modular Career Mentor, Resume Hub, Interviews & Coding
-├── backend/              # Python AI & Mentoring Services
-│   ├── services/         # Groq AI Orchestration, Execution Engine (Code Runner)
+├── backend/              # Python AI, Mentoring & Job Search Services
+│   ├── services/         # Groq AI Orchestration, Execution Engine, SerpApi Integration
 │   └── routes/           # Interactive Career, Coding & Assessment Endpoints
 └── node-backend/         # Node.js Resume & Document Processing
     └── routes/          # AI Resume Analysis & PDF Generation
