@@ -64,7 +64,16 @@ scheduler.add_job(id='refresh_jobs', func=refresh_opportunities_job, trigger='in
 # Basic health check route
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "healthy", "message": "AI Placement API is running!"}), 200
+    groq_key = os.environ.get('GROQ_API_KEY')
+    serp_key = os.environ.get('SERP_API_KEY')
+    return jsonify({
+        "status": "healthy", 
+        "message": "AI Placement API is running!",
+        "api_keys_health": {
+            "GROQ_API_KEY": "configured" if groq_key else "missing",
+            "SERP_API_KEY": "configured" if serp_key else "missing"
+        }
+    }), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

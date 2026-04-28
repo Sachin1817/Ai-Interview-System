@@ -88,3 +88,29 @@ def login():
         }), 200
 
     return jsonify({"message": "Invalid credentials"}), 401
+
+from utils.auth_helper import token_required
+@auth_bp.route('/profile', methods=['PUT'])
+@token_required
+def update_profile(user_id):
+    """Sync profile updates (e.g., branch) from frontend to MongoDB."""
+    data = request.get_json()
+    update_data = {}
+    
+    if 'branch' in data:
+        update_data['branch'] = data['branch']
+    if 'name' in data:
+        update_data['name'] = data['name']
+        
+    if update_data:
+        try:
+            # Try ObjectId first
+            result = users_col.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
+            if result.matched_count == 0:
+                # Fallback to string user_id
+                users_col.update_one({"_id": user_id}, {"$set": update_data})
+        except Exception:
+            # Fallback for invalid ObjectId format
+            users_col.update_one({"_id": user_id}, {"$set": update_data})
+            
+    return jsonify({"message": "Profile synced successfully"}), 200

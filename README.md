@@ -37,6 +37,10 @@ An intelligent, multi-service platform designed to revolutionize the career jour
 - **Smart Matching**: AI-driven analysis to match your skills with live job requirements.
 - **Direct Apply**: One-click access to application portals for matching roles.
 
+### 6. **Comprehensive User Profile & Career Personalization**
+- **Branch-Specific Analysis**: Accurately maps engineering branch specializations (e.g., CSE, ECE, ME) to provide tailored career advice and job recommendations.
+- **Dynamic Profile Management**: Integrated user profile tracking that informs the AI mentor about your background and goals.
+
 ---
 
 ## 🛠️ Unified Tech Stack

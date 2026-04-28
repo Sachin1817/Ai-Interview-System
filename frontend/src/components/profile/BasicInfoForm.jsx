@@ -3,12 +3,14 @@ import { User, Mail, Phone, GraduationCap, School, Briefcase } from 'lucide-reac
 
 const BasicInfoForm = ({ formData, setFormData, errors }) => {
   const branches = [
-    'Computer Science Engineering',
-    'Information Technology',
-    'Electronics and Communication Engineering',
-    'Electrical Engineering',
-    'Mechanical Engineering',
-    'Civil Engineering'
+    { label: 'Computer Science Engineering (CSE)', value: 'CSE' },
+    { label: 'Information Technology (IT)', value: 'IT' },
+    { label: 'Electronics and Communication (ECE)', value: 'ECE' },
+    { label: 'Electrical Engineering (EEE)', value: 'EEE' },
+    { label: 'Mechanical Engineering', value: 'Mechanical' },
+    { label: 'Civil Engineering', value: 'Civil' },
+    { label: 'Chemical Engineering', value: 'Chemical' },
+    { label: 'Aerospace Engineering', value: 'Aerospace' }
   ];
 
   const roles = [
@@ -102,7 +104,7 @@ const BasicInfoForm = ({ formData, setFormData, errors }) => {
         >
           <option value="">Select Branch</option>
           {branches.map(b => (
-            <option key={b} value={b}>{b}</option>
+            <option key={b.value} value={b.value}>{b.label}</option>
           ))}
         </select>
         {errors.branch && <p className="text-[10px] text-red-400 font-semibold">{errors.branch}</p>}

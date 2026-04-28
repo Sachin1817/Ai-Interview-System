@@ -379,6 +379,12 @@ def get_job_recommendations(branch, role=None, user_skills=None, location=None):
                         if not salary and any(x in ext.lower() for x in ["a year", "an hour", "a month"]):
                             salary = ext
 
+                    apply_link = job.get("share_link")
+                    if job.get("apply_options") and len(job["apply_options"]) > 0:
+                        apply_link = job["apply_options"][0].get("link", apply_link)
+                    elif job.get("related_links") and len(job["related_links"]) > 0:
+                        apply_link = job["related_links"][0].get("link", apply_link)
+
                     formatted_jobs.append({
                         "_id": job.get("job_id", os.urandom(8).hex()),
                         "title": job.get("title"),
@@ -387,7 +393,7 @@ def get_job_recommendations(branch, role=None, user_skills=None, location=None):
                         "jobType": job_type,
                         "postedDate": posted_date,
                         "salary": salary,
-                        "applyLink": job.get("related_links", [{}])[0].get("link") if job.get("related_links") else job.get("share_link"),
+                        "applyLink": apply_link,
                         "skills": [], 
                         "description": job.get("description", ""),
                         "is_external": True

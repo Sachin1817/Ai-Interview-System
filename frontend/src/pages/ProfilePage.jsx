@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserProfile, saveUserProfile, uploadProfileImage, calculateCompletion } from '../services/profileService';
+import { authAPI } from '../services/api';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileImageUpload from '../components/profile/ProfileImageUpload';
 import BasicInfoForm from '../components/profile/BasicInfoForm';
@@ -49,10 +50,15 @@ const ProfilePage = () => {
 
   const validate = () => {
     let newErrors = {};
-    if (!formData.name.trim()) newErrors.name = "Full Name is required";
-    if (!formData.phone.trim() || !/^\d{10}$/.test(formData.phone)) newErrors.phone = "Valid 10-digit number required";
+    if (!formData.name || !formData.name.trim()) newErrors.name = "Full Name is required";
+    
+    // Make phone optional, or if provided, just check it has at least 10 digits
+    if (formData.phone && formData.phone.replace(/\D/g, '').length < 10) {
+      newErrors.phone = "Valid phone number required";
+    }
+    
     if (!formData.branch) newErrors.branch = "Branch is required";
-    if (!formData.college.trim()) newErrors.college = "College Name is required";
+    if (!formData.college || !formData.college.trim()) newErrors.college = "College Name is required";
     if (!formData.graduationYear) newErrors.graduationYear = "Graduation Year is required";
     if (!formData.targetRole) newErrors.targetRole = "Target Job Role is required";
     setErrors(newErrors);
@@ -79,6 +85,13 @@ const ProfilePage = () => {
       };
 
       await saveUserProfile(currentUser.uid, profileToSave);
+      
+      try {
+          await authAPI.updateProfile(profileToSave);
+      } catch (err) {
+          console.warn("Backend sync failed", err);
+      }
+      
       setFormData(profileToSave);
       setIsEditing(false);
       setStatus({ type: 'success', message: 'Profile updated successfully!' });
@@ -102,7 +115,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen pt-40 pb-20 px-6 flex flex-col items-center justify-center">
+    <div className="min-h-screen pt-32 pb-16 px-4 md:px-6 flex flex-col items-center justify-start overflow-y-auto">
       <ProfileCard completion={completion}>
         
         {/* Status Notification */}
@@ -126,7 +139,7 @@ const ProfilePage = () => {
           
           {/* Avatar Area */}
           <div className="mb-10 w-full flex justify-center">
-            <div className={isEditing ? '' : 'pointer-events-none'}>
+            <div>
                 <ProfileImageUpload
                   currentImage={formData.profileImage}
                   onImageSelect={(file) => setSelectedFile(file)}
@@ -139,38 +152,19 @@ const ProfilePage = () => {
           </div>
 
           {/* Form Fields Section */}
-          <div className={`w-full transition-all duration-500 ${isEditing ? 'opacity-100' : 'opacity-80 pointer-events-none grayscale-[0.3]'}`}>
+          <div className="w-full">
              <BasicInfoForm formData={formData} setFormData={setFormData} errors={errors} />
           </div>
 
           {/* Actions */}
           <div className="mt-12 flex gap-4 w-full justify-center">
-            {isEditing ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="px-8 py-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all hover:border-slate-300 dark:hover:border-slate-500 active:scale-95"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-10 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-900 font-black flex items-center gap-2 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-xl shadow-cyan-500/20 disabled:opacity-50 active:scale-95 disabled:scale-100"
-                >
-                  {saving ? <Loader2 className="animate-spin" /> : <Save />} Save Profile
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="px-12 py-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-accent dark:text-cyan-400 font-black flex items-center gap-2 hover:border-accent/50 dark:hover:border-cyan-500/50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-xl active:scale-95"
-              >
-                <Edit3 size={20} /> Edit Profile
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-10 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-900 font-black flex items-center gap-2 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-xl shadow-cyan-500/20 disabled:opacity-50 active:scale-95 disabled:scale-100"
+            >
+              {saving ? <Loader2 className="animate-spin" /> : <Save />} Save Profile
+            </button>
           </div>
         </form>
       </ProfileCard>
