@@ -596,7 +596,7 @@ const AIInterview = () => {
     const handleFinish = (resultData, allAnswers) => { setResult(resultData); setAnswers(allAnswers); };
 
     return (
-        <div className="min-h-screen pt-60 pb-20 px-6 relative overflow-visible">
+        <div className="min-h-screen pt-36 md:pt-40 pb-20 px-6 relative overflow-visible">
             {/* Background Decorations */}
             <div className="blob blob-1"></div>
             <div className="blob blob-2"></div>

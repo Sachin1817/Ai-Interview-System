@@ -76,7 +76,7 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen pt-60 pb-20 px-6 relative overflow-visible">
+        <div className="min-h-screen pt-36 md:pt-40 pb-20 px-6 relative overflow-visible">
             {/* Background Decorations */}
             <div className="blob blob-1"></div>
             <div className="blob blob-2"></div>
@@ -88,7 +88,7 @@ const Dashboard = () => {
                     initial={{ opacity: 0, y: -40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="text-center mb-24"
+                    className="text-center mb-16"
                 >
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}
@@ -99,7 +99,7 @@ const Dashboard = () => {
                         Next-Gen AI Platform
                     </motion.div>
                     
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-8 tracking-tighter leading-[1.1]">
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-8 tracking-tighter leading-[1.1]">
                         <span className="text-light-text dark:text-white">Master your </span>
                         <span className="hero-gradient drop-shadow-2xl">
                             Future
@@ -116,23 +116,23 @@ const Dashboard = () => {
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="space-y-32"
+                    className="space-y-20 lg:space-y-24"
                 >
                     {categories.map((category) => (
                         <div key={category.name} className="relative">
-                            <h2 className="section-heading mb-12">{category.name}</h2>
+                            <h2 className="section-heading mb-8">{category.name}</h2>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 items-stretch">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
                                 {category.modules.map((m) => (
                                     <motion.div key={m.title} variants={itemVariants} className="group relative">
                                         <Link to={m.href} className="block h-full card-glow">
                                             <ThreeDCard className="h-full">
-                                                <div className="glass-card h-full p-10 flex flex-col relative group-hover:bg-white/50 dark:group-hover:bg-white/10 transition-colors duration-500">
+                                                <div className="glass-card h-full p-6 lg:p-8 flex flex-col relative group-hover:bg-white/50 dark:group-hover:bg-white/10 transition-colors duration-500">
                                                     {/* Premium Shine Effect */}
                                                     <div className="shine-effect" />
                                                     
-                                                    <div className="flex items-start justify-between mb-10">
-                                                        <div className="text-5xl bg-gradient-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-950 p-6 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/20 transition-all duration-500 float-up">
+                                                    <div className="flex items-start justify-between mb-6 lg:mb-8">
+                                                        <div className="text-3xl bg-gradient-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-950 p-4 lg:p-5 rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/20 transition-all duration-500 float-up">
                                                             {m.icon}
                                                         </div>
                                                         <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-cyan-500/20 bg-cyan-500/10 text-cyan-400 shadow-lg`}>
@@ -141,7 +141,7 @@ const Dashboard = () => {
                                                     </div>
                                                     
                                                     <div className="flex-grow lift-content">
-                                                        <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-4 group-hover:text-cyan-400 transition-colors duration-300">
+                                                        <h3 className="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3 group-hover:text-cyan-400 transition-colors duration-300">
                                                             {m.title}
                                                         </h3>
                                                         <p className="text-slate-500 dark:text-slate-400 leading-relaxed font-medium text-base group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors duration-500">
@@ -149,7 +149,7 @@ const Dashboard = () => {
                                                         </p>
                                                     </div>
 
-                                                    <div className="mt-12 flex items-center justify-between group/btn">
+                                                    <div className="mt-6 lg:mt-8 flex items-center justify-between group/btn">
                                                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 group-hover:text-cyan-400 transition-colors">
                                                             Explore Module
                                                         </span>
@@ -241,8 +241,48 @@ const Nav = () => {
 
     return (
         <>
-        <nav className="fixed top-8 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl px-8 py-4 glass-panel rounded-[2rem] flex justify-between items-center z-[100] border-white/5 shadow-2xl">
-            <div className="flex items-center gap-6">
+        {/* Desktop Sidebar (Persistent) */}
+        <div className="fixed left-0 top-0 bottom-0 z-50 w-72 h-full bg-slate-900/40 backdrop-blur-3xl border-r border-white/5 shadow-[20px_0_50px_rgba(0,0,0,0.5)] p-8 flex flex-col hidden lg:flex">
+            <div className="flex items-center justify-between mb-12">
+                <Link to="/" className="font-black text-xl tracking-tight text-white flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg p-1 px-2.5 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/20">AI</div>
+                    <span>Placement</span>
+                </Link>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                {navLinks.map((link) => (
+                    <Link 
+                        key={link.to} 
+                        to={link.to}
+                        className={`group flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden ${isActive(link.to) ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.1)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <div className={`p-2 rounded-xl transition-colors duration-300 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'}`}>
+                            {link.icon}
+                        </div>
+                        <span className="text-lg font-bold tracking-wide">
+                            {link.label}
+                        </span>
+                        {isActive(link.to) && (
+                            <div className="absolute left-0 w-1 bg-cyan-400 rounded-r-full" style={{ height: '60%', top: '20%' }} />
+                        )}
+                    </Link>
+                ))}
+            </div>
+
+            <div className="mt-auto pt-8 border-t border-white/5">
+                <div className="bg-slate-800/30 p-4 rounded-2xl border border-white/5">
+                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Current Tier</p>
+                    <div className="flex items-center justify-between">
+                        <span className="text-white font-bold text-sm">Professional Plan</span>
+                        <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-black border border-cyan-500/20">PRO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav className="fixed top-0 left-0 right-0 w-full lg:left-72 lg:w-[calc(100%-18rem)] px-8 py-4 bg-white/80 dark:bg-slate-950/40 backdrop-blur-3xl border-b border-slate-200 dark:border-white/5 flex justify-between lg:justify-end items-center z-[100] shadow-xl transition-all duration-300">
+            <div className="flex items-center gap-6 lg:hidden">
                 <motion.button 
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -348,7 +388,7 @@ const Nav = () => {
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -400, opacity: 0 }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="fixed left-0 top-0 bottom-0 z-50 w-full max-w-[20rem] sm:max-w-[24rem] h-full bg-slate-900/40 backdrop-blur-3xl border-r border-white/5 shadow-[20px_0_50px_rgba(0,0,0,0.5)] p-8 flex flex-col"
+                    className="fixed left-0 top-0 bottom-0 z-50 w-full max-w-[20rem] sm:max-w-[24rem] h-full bg-slate-900/40 backdrop-blur-3xl border-r border-white/5 shadow-[20px_0_50px_rgba(0,0,0,0.5)] p-8 flex flex-col lg:hidden"
                 >
                     <div className="flex items-center justify-between mb-12">
                         <Link to="/" onClick={() => setMobileMenuOpen(false)} className="font-black text-xl tracking-tight text-white flex items-center gap-2">
@@ -404,7 +444,7 @@ function App() {
         <ThemeProvider>
             <AuthProvider>
                 <Router>
-                    <div className="bg-light-bg dark:bg-dark-bg min-h-screen text-light-text dark:text-slate-100 font-sans selection:bg-cyan-500/30 transition-colors duration-300 overflow-x-hidden">
+                    <div className="bg-light-bg dark:bg-dark-bg min-h-screen text-light-text dark:text-slate-100 font-sans selection:bg-cyan-500/30 transition-colors duration-300 overflow-x-hidden lg:pl-72">
                         
                         {/* 3D Background */}
                         <FloatingBackground />

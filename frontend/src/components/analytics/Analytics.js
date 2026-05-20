@@ -175,7 +175,7 @@ const Analytics = () => {
     };
 
     return (
-        <div className="min-h-screen pt-60 pb-20 px-6 lg:px-12 relative overflow-visible">
+        <div className="min-h-screen pt-36 md:pt-40 pb-20 px-6 lg:px-12 relative overflow-visible">
             {/* Ambient Background */}
             <div className="blob blob-1 opacity-20"></div>
             

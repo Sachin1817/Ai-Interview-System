@@ -11,7 +11,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import api from '../../services/api';
+import api, { resumeBuilderApi } from '../../services/api';
 
 const ResumeBuilder = () => {
     const { currentUser } = useAuth();
@@ -116,7 +116,7 @@ const ResumeBuilder = () => {
         setStep(8); // Move to the final page immediately
         setAiLoading(true);
         try {
-            const res = await api.post('/resume/analyze', { resumeData });
+            const res = await resumeBuilderApi.post('/resume/analyze', { resumeData });
             setAtsData(res.data);
         } catch (err) {
             console.error("AI Analysis failed", err);
@@ -130,7 +130,7 @@ const ResumeBuilder = () => {
         if (!original) return;
         setAiLoading(true);
         try {
-            const res = await api.post('/resume/improve-description', { description: original });
+            const res = await resumeBuilderApi.post('/resume/improve-description', { description: original });
             handleArrayChange('projects', index, 'description', res.data.improved);
         } catch (err) {
             console.error("AI improvement failed", err);
@@ -221,7 +221,7 @@ const ResumeBuilder = () => {
     );
 
     return (
-        <div className="min-h-screen pt-40 pb-20 px-6 lg:px-12 relative overflow-hidden">
+        <div className="min-h-screen pt-32 lg:pt-36 pb-20 px-6 lg:px-12 relative overflow-hidden">
             {/* Ambient Background */}
             <div className="blob blob-1 opacity-20"></div>
             <div className="blob blob-2 opacity-20"></div>

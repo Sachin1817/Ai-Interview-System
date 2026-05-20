@@ -7,6 +7,11 @@ const api = axios.create({
     baseURL: API_URL,
 });
 
+// Axios instance for Node.js Resume Builder API (Port 5001)
+export const resumeBuilderApi = axios.create({
+    baseURL: process.env.REACT_APP_RESUME_BUILDER_API_URL || 'http://localhost:5001/api',
+});
+
 // Attach JWT token to every request automatically
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');

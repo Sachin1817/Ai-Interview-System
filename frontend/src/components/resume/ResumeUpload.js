@@ -33,7 +33,7 @@ const ResumeUpload = () => {
     };
 
     return (
-        <div className="min-h-screen pt-40 pb-20 px-8 max-w-5xl mx-auto">
+        <div className="min-h-screen pt-32 lg:pt-36 pb-20 px-8 max-w-5xl mx-auto">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

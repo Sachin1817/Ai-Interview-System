@@ -115,7 +115,7 @@ const CodingInterview = () => {
     };
 
     return (
-        <div className="min-h-screen pt-60 pb-20 px-6 relative">
+        <div className="min-h-screen pt-36 md:pt-40 pb-20 px-6 relative">
             <div className="max-w-7xl mx-auto relative z-10">
                 <AnimatePresence mode="wait">
                     {step === 'select-role' && (

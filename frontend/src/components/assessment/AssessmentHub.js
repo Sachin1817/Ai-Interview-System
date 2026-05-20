@@ -566,7 +566,7 @@ const AssessmentHub = () => {
     };
 
     return (
-        <div className="min-h-screen pt-60 pb-20 px-6 relative overflow-visible">
+        <div className="min-h-screen pt-36 md:pt-40 pb-20 px-6 relative overflow-visible">
             {/* Ambient Background */}
             <div className="blob blob-1 opacity-20"></div>
             <div className="blob blob-2 opacity-20"></div>
