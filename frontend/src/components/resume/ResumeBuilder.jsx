@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     User, BookOpen, Cpu, Briefcase, Award, CheckCircle, 
     ChevronRight, ChevronLeft, Save, Sparkles, Download, 
-    Plus, Trash2, Rocket, Zap, Target
+    Plus, Trash2, Rocket, Zap, Target,
+    Phone, Mail, Linkedin, Github, Globe, MapPin
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { db, storage } from '../../firebase/firebaseConfig';
@@ -30,14 +31,42 @@ const ResumeBuilder = () => {
             linkedin: '',
             github: '',
             portfolio: '',
-            photoURL: ''
+            summary: ''
         },
-        education: [{ degree: '', branch: '', collegeName: '', university: '', startYear: '', endYear: '', cgpa: '' }],
-        skills: { technical: '', languages: '', tools: '', soft: '' },
-        projects: [{ title: '', description: '', technologiesUsed: '', githubLink: '', role: '', duration: '' }],
-        experience: [{ companyName: '', role: '', duration: '', responsibilities: '' }],
-        certifications: [{ name: '', organization: '', year: '' }],
-        achievements: { awards: '', publications: '' }
+        education: [
+            { 
+                degree: '', 
+                branch: '', 
+                collegeName: '', 
+                university: '', 
+                startYear: '', 
+                endYear: '', 
+                cgpa: '',
+                location: ''
+            }
+        ],
+        skills: { 
+            languages: '', 
+            specializations: '', 
+            frameworksTools: '',
+            soft: '' 
+        },
+        projects: [
+            { 
+                title: '', 
+                description: '', 
+                technologiesUsed: '', 
+                githubLink: '', 
+                liveLink: '',
+                role: '', 
+                duration: '' 
+            }
+        ],
+        experience: [],
+        certifications: [],
+        achievements: { 
+            awards: '' 
+        }
     });
 
     const steps = [
@@ -295,6 +324,26 @@ const ResumeBuilder = () => {
                                                 className="premium-input" 
                                             />
                                         </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">GitHub Profile</label>
+                                            <input 
+                                                type="text" 
+                                                value={resumeData.personalInfo.github || ''}
+                                                onChange={(e) => handleInputChange('personalInfo', 'github', e.target.value)}
+                                                placeholder="github.com/username"
+                                                className="premium-input" 
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Portfolio Website</label>
+                                            <input 
+                                                type="text" 
+                                                value={resumeData.personalInfo.portfolio || ''}
+                                                onChange={(e) => handleInputChange('personalInfo', 'portfolio', e.target.value)}
+                                                placeholder="myportfolio.com"
+                                                className="premium-input" 
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Geographic Base</label>
@@ -304,6 +353,15 @@ const ResumeBuilder = () => {
                                             onChange={(e) => handleInputChange('personalInfo', 'location', e.target.value)}
                                             placeholder="Dubai, UAE"
                                             className="premium-input" 
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Professional Summary</label>
+                                        <textarea 
+                                            value={resumeData.personalInfo.summary || ''}
+                                            onChange={(e) => handleInputChange('personalInfo', 'summary', e.target.value)}
+                                            placeholder="Final-year Computer Science student..."
+                                            className="premium-input min-h-[140px] !py-4" 
                                         />
                                     </div>
                                 </section>
@@ -340,11 +398,31 @@ const ResumeBuilder = () => {
                                                         />
                                                     </div>
                                                     <div className="space-y-3">
+                                                        <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Specialization / Branch</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={edu.branch}
+                                                            onChange={(e) => handleArrayChange('education', idx, 'branch', e.target.value)}
+                                                            placeholder="e.g. Computer Science"
+                                                            className="premium-input !bg-white dark:!bg-slate-950" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
                                                         <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Institution Name</label>
                                                         <input 
                                                             type="text" 
                                                             value={edu.collegeName}
                                                             onChange={(e) => handleArrayChange('education', idx, 'collegeName', e.target.value)}
+                                                            className="premium-input !bg-white dark:!bg-slate-950" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Institution Location</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={edu.location || ''}
+                                                            onChange={(e) => handleArrayChange('education', idx, 'location', e.target.value)}
+                                                            placeholder="e.g. Mysuru, KA"
                                                             className="premium-input !bg-white dark:!bg-slate-950" 
                                                         />
                                                     </div>
@@ -371,7 +449,7 @@ const ResumeBuilder = () => {
                                         ))}
                                     </div>
                                     <button 
-                                        onClick={() => addArrayItem('education', { degree: '', branch: '', collegeName: '', university: '', startYear: '', endYear: '', cgpa: '' })}
+                                        onClick={() => addArrayItem('education', { degree: '', branch: '', collegeName: '', university: '', startYear: '', endYear: '', cgpa: '', location: '' })}
                                         className="w-full py-8 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2.5rem] text-slate-400 hover:text-cyan-500 hover:border-cyan-500/30 bg-slate-50 dark:bg-white/5 hover:bg-cyan-500/5 transition-all flex items-center justify-center gap-4 font-black text-sm uppercase tracking-widest"
                                     >
                                         <Plus className="w-6 h-6" /> Append Educational Milestone
@@ -383,37 +461,34 @@ const ResumeBuilder = () => {
                                 <section className="space-y-12">
                                     <header>
                                         <h3 className="section-heading !mb-2">Technical Arsenal</h3>
-                                        <p className="text-slate-500 text-sm">Our AI will optimize these keywords for parser compatibility.</p>
+                                        <p className="text-slate-500 text-sm">Categorize your technical capabilities for parser compatibility.</p>
                                     </header>
                                     <div className="space-y-10">
                                         <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Primary Tech Stack</label>
-                                                <span className="text-[8px] text-cyan-500 font-black uppercase tracking-widest bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">High ATS Intensity</span>
-                                            </div>
-                                            <textarea 
-                                                value={resumeData.skills.technical}
-                                                onChange={(e) => handleInputChange('skills', 'technical', e.target.value)}
-                                                placeholder="e.g. React.js, TypeScript, Kubernetes, Node.js..."
-                                                className="premium-input min-h-[140px] !py-6"
-                                            />
-                                        </div>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Subsidary Tools</label>
-                                            <textarea 
-                                                value={resumeData.skills.tools}
-                                                onChange={(e) => handleInputChange('skills', 'tools', e.target.value)}
-                                                placeholder="e.g. Git, Docker, JIRA, Postman..."
-                                                className="premium-input min-h-[120px] !py-6"
-                                            />
-                                        </div>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Natural Languages</label>
+                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Languages</label>
                                             <textarea 
                                                 value={resumeData.skills.languages}
                                                 onChange={(e) => handleInputChange('skills', 'languages', e.target.value)}
-                                                placeholder="e.g. Native Proficiency: English, Hindi, German..."
-                                                className="premium-input min-h-[100px] !py-6"
+                                                placeholder="e.g. JavaScript (ES6+), Python, HTML5, CSS3..."
+                                                className="premium-input min-h-[100px] !py-4"
+                                            />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Specializations</label>
+                                            <textarea 
+                                                value={resumeData.skills.specializations || ''}
+                                                onChange={(e) => handleInputChange('skills', 'specializations', e.target.value)}
+                                                placeholder="e.g. AI & Machine Learning, GenAI Tools, Full-Stack App Development..."
+                                                className="premium-input min-h-[100px] !py-4"
+                                            />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Frameworks / Tools</label>
+                                            <textarea 
+                                                value={resumeData.skills.frameworksTools || ''}
+                                                onChange={(e) => handleInputChange('skills', 'frameworksTools', e.target.value)}
+                                                placeholder="e.g. React.js, Node.js, Express.js, Flask, FastAPI, MongoDB, Firebase, Git/GitHub..."
+                                                className="premium-input min-h-[100px] !py-4"
                                             />
                                         </div>
                                     </div>
@@ -461,11 +536,31 @@ const ResumeBuilder = () => {
                                                                 className="premium-input !bg-white dark:!bg-slate-950" 
                                                             />
                                                         </div>
+                                                        <div className="space-y-3">
+                                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">GitHub Repository Link</label>
+                                                            <input 
+                                                                type="text" 
+                                                                value={proj.githubLink || ''}
+                                                                onChange={(e) => handleArrayChange('projects', idx, 'githubLink', e.target.value)}
+                                                                placeholder="e.g. github.com/user/project"
+                                                                className="premium-input !bg-white dark:!bg-slate-950" 
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Live Deployment Link</label>
+                                                            <input 
+                                                                type="text" 
+                                                                value={proj.liveLink || ''}
+                                                                onChange={(e) => handleArrayChange('projects', idx, 'liveLink', e.target.value)}
+                                                                placeholder="e.g. myproject.live"
+                                                                className="premium-input !bg-white dark:!bg-slate-950" 
+                                                            />
+                                                        </div>
                                                     </div>
                                                     
                                                     <div className="space-y-4">
                                                         <div className="flex justify-between items-center">
-                                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Impact & Description</label>
+                                                            <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Impact & Description (Each line is a bullet point)</label>
                                                             <button 
                                                                 onClick={() => improveDescription(idx)}
                                                                 disabled={aiLoading}
@@ -486,7 +581,7 @@ const ResumeBuilder = () => {
                                         ))}
                                     </div>
                                     <button 
-                                        onClick={() => addArrayItem('projects', { title: '', description: '', technologiesUsed: '', githubLink: '', role: '', duration: '' })}
+                                        onClick={() => addArrayItem('projects', { title: '', description: '', technologiesUsed: '', githubLink: '', liveLink: '', role: '', duration: '' })}
                                         className="w-full py-8 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2.5rem] text-slate-400 hover:text-cyan-500 hover:border-cyan-500/30 bg-slate-50 dark:bg-white/5 hover:bg-cyan-500/5 transition-all flex items-center justify-center gap-4 font-black text-sm uppercase tracking-widest"
                                     >
                                         <Plus className="w-6 h-6" /> Catalog New Research/Project
@@ -533,6 +628,26 @@ const ResumeBuilder = () => {
                                                             className="premium-input !bg-white dark:!bg-slate-950" 
                                                         />
                                                     </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Duration / Timeline</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={exp.duration || ''}
+                                                            onChange={(e) => handleArrayChange('experience', idx, 'duration', e.target.value)}
+                                                            placeholder="e.g. Jun 2024 - Aug 2024"
+                                                            className="premium-input !bg-white dark:!bg-slate-950" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Location</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={exp.location || ''}
+                                                            onChange={(e) => handleArrayChange('experience', idx, 'location', e.target.value)}
+                                                            placeholder="e.g. Mysuru, KA"
+                                                            className="premium-input !bg-white dark:!bg-slate-950" 
+                                                        />
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-4 mt-8">
                                                     <label className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Core Responsibilities</label>
@@ -546,7 +661,7 @@ const ResumeBuilder = () => {
                                         ))}
                                     </div>
                                     <button 
-                                        onClick={() => addArrayItem('experience', { companyName: '', role: '', duration: '', responsibilities: '' })}
+                                        onClick={() => addArrayItem('experience', { companyName: '', role: '', duration: '', responsibilities: '', location: '' })}
                                         className="w-full py-8 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2.5rem] text-slate-400 hover:text-cyan-500 hover:border-cyan-500/30 bg-slate-50 dark:bg-white/5 hover:bg-cyan-500/5 transition-all flex items-center justify-center gap-4 font-black text-sm uppercase tracking-widest"
                                     >
                                         <Plus className="w-6 h-6" /> Add Professional Block
@@ -750,7 +865,7 @@ const ResumeBuilder = () => {
                 </div>
 
                 {/* ─── RIGHT: LIVE PREVIEW ─── */}
-                <div className="hidden lg:block w-[450px]">
+                <div className="hidden lg:block w-[550px] flex-shrink-0">
                     <div className="sticky top-32">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.4em]">Live Rendering</h3>
@@ -762,89 +877,264 @@ const ResumeBuilder = () => {
                         </div>
                         
                         <div className="glass-panel rounded-[3rem] p-4 bg-slate-200/50 dark:bg-slate-900/50 border-white/5 shadow-2xl overflow-hidden group">
-                            <div className="bg-white rounded-[2rem] shadow-2xl h-[700px] overflow-y-auto p-12 origin-top hover:scale-[1.01] transition-transform duration-700 custom-scrollbar relative">
+                            <div className="bg-white rounded-[2rem] shadow-2xl h-[700px] overflow-y-auto p-10 origin-top hover:scale-[1.01] transition-transform duration-700 custom-scrollbar relative">
                                 {/* Visual Resume Rendering */}
-                                <div id="resume-preview-content" className="text-slate-950 font-sans bg-white min-h-full">
-                                    <div className="text-center border-b-[3px] border-slate-900 pb-8 mb-10">
-                                        <h1 className="text-3xl font-black uppercase tracking-tighter leading-none mb-4">{resumeData.personalInfo.fullName || 'Your Identity'}</h1>
-                                        <div className="text-[10px] text-slate-600 font-bold uppercase tracking-widest space-x-2">
-                                            <span>{resumeData.personalInfo.email}</span>
-                                            {resumeData.personalInfo.phoneNumber && <span>• {resumeData.personalInfo.phoneNumber}</span>}
-                                            {resumeData.personalInfo.location && <span>• {resumeData.personalInfo.location}</span>}
-                                        </div>
-                                        <div className="text-[9px] text-cyan-600 font-black mt-3 uppercase tracking-[0.2em]">
-                                            {resumeData.personalInfo.linkedin} {resumeData.personalInfo.linkedin && resumeData.personalInfo.github && '|'} {resumeData.personalInfo.github}
+                                <div 
+                                    id="resume-preview-content" 
+                                    className="text-slate-950 font-serif bg-white min-h-full p-2"
+                                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                                >
+                                    {/* Header */}
+                                    <div className="text-center mb-5">
+                                        <h1 className="text-2xl font-bold uppercase tracking-wide mb-1" style={{ fontSize: '20px', color: '#000000' }}>
+                                            {resumeData.personalInfo.fullName || 'Your Name'}
+                                        </h1>
+                                        
+                                        <div className="flex flex-wrap justify-center items-center gap-x-2 text-[9.5px] font-medium text-slate-900">
+                                            {resumeData.personalInfo.phoneNumber && (
+                                                <span className="flex items-center gap-1">
+                                                    <Phone className="w-2.5 h-2.5 text-black" /> {resumeData.personalInfo.phoneNumber}
+                                                </span>
+                                            )}
+                                            {resumeData.personalInfo.phoneNumber && resumeData.personalInfo.email && <span className="text-slate-400">—</span>}
+                                            {resumeData.personalInfo.email && (
+                                                <span className="flex items-center gap-1">
+                                                    <Mail className="w-2.5 h-2.5 text-black" /> {resumeData.personalInfo.email}
+                                                </span>
+                                            )}
+                                            {resumeData.personalInfo.email && resumeData.personalInfo.linkedin && <span className="text-slate-400">—</span>}
+                                            {resumeData.personalInfo.linkedin && (
+                                                <span className="flex items-center gap-1">
+                                                    <Linkedin className="w-2.5 h-2.5 text-black" /> {resumeData.personalInfo.linkedin}
+                                                </span>
+                                            )}
+                                            {resumeData.personalInfo.linkedin && resumeData.personalInfo.github && <span className="text-slate-400">—</span>}
+                                            {resumeData.personalInfo.github && (
+                                                <span className="flex items-center gap-1">
+                                                    <Github className="w-2.5 h-2.5 text-black" /> {resumeData.personalInfo.github}
+                                                </span>
+                                            )}
+                                            {resumeData.personalInfo.github && resumeData.personalInfo.portfolio && <span className="text-slate-400">—</span>}
+                                            {resumeData.personalInfo.portfolio && (
+                                                <span className="flex items-center gap-1">
+                                                    <Globe className="w-2.5 h-2.5 text-black" /> {resumeData.personalInfo.portfolio}
+                                                </span>
+                                            )}
+                                            {resumeData.personalInfo.portfolio && resumeData.personalInfo.location && <span className="text-slate-400">—</span>}
+                                            {resumeData.personalInfo.location && (
+                                                <span className="flex items-center gap-1">
+                                                    <MapPin className="w-2.5 h-2.5 text-black" /> {resumeData.personalInfo.location}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <section className="mb-10">
-                                        <h2 className="text-[14px] font-black uppercase text-slate-900 border-b-2 border-slate-100 pb-2 mb-5 tracking-[0.25em]">Educational Core</h2>
-                                        {resumeData.education.map((e, i) => (
-                                            e.degree && (
-                                                <div key={i} className="mb-5 last:mb-0">
-                                                    <div className="flex justify-between items-baseline font-black text-xs uppercase tracking-tight">
-                                                        <span className="text-slate-900">{e.degree} {e.branch && `- ${e.branch}`}</span>
-                                                        <span className="text-[9px] text-slate-500">{e.startYear} - {e.endYear || 'Present'}</span>
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-600 font-bold mt-1 inline-flex items-center gap-2">
-                                                        {e.collegeName} <span className="w-1 h-1 rounded-full bg-slate-300" /> CGPA: {e.cgpa}
-                                                    </div>
-                                                </div>
-                                            )
-                                        ))}
-                                    </section>
+                                    {/* PROFESSIONAL SUMMARY */}
+                                    {resumeData.personalInfo.summary && (
+                                        <section className="mb-5">
+                                            <h2 className="text-[11px] font-bold uppercase text-slate-900 tracking-wider mb-0.5">
+                                                PROFESSIONAL SUMMARY
+                                            </h2>
+                                            <hr className="border-t border-slate-900 mb-1.5" />
+                                            <p className="text-[10px] leading-relaxed text-justify text-slate-950 font-medium">
+                                                {resumeData.personalInfo.summary}
+                                            </p>
+                                        </section>
+                                    )}
 
-                                    <section className="mb-10">
-                                        <h2 className="text-[14px] font-black uppercase text-slate-900 border-b-2 border-slate-100 pb-2 mb-5 tracking-[0.25em]">Research & Projects</h2>
-                                        {resumeData.projects.map((p, i) => (
-                                            p.title && (
-                                                <div key={i} className="mb-6 last:mb-0">
-                                                    <div className="flex justify-between items-baseline font-black text-[11px] uppercase tracking-tight">
-                                                        <span className="text-slate-900 bg-slate-100 px-2 py-0.5 rounded">{p.title}</span>
-                                                        <span className="text-[9px] text-cyan-700 tracking-widest">{p.technologiesUsed}</span>
+                                    {/* EDUCATION */}
+                                    {resumeData.education && resumeData.education.length > 0 && resumeData.education.some(e => e.collegeName) && (
+                                        <section className="mb-5">
+                                            <h2 className="text-[11px] font-bold uppercase text-slate-900 tracking-wider mb-0.5">
+                                                EDUCATION
+                                            </h2>
+                                            <hr className="border-t border-slate-900 mb-1.5" />
+                                            <div className="space-y-2">
+                                                {resumeData.education.map((e, i) => (
+                                                    e.collegeName && (
+                                                        <div key={i} className="text-[10px]">
+                                                            <div className="flex justify-between font-bold text-slate-950">
+                                                                <span>{e.collegeName}</span>
+                                                                <span>{e.startYear}{e.endYear && ` – ${e.endYear}`}</span>
+                                                            </div>
+                                                            <div className="flex justify-between italic text-slate-700 mt-0.5">
+                                                                <span>
+                                                                    {e.degree}{e.branch && ` in ${e.branch}`}
+                                                                    {e.cgpa && ` (${e.cgpa})`}
+                                                                </span>
+                                                                <span>{e.location || ''}</span>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {/* TECHNICAL SKILLS */}
+                                    {((resumeData.skills.languages) || (resumeData.skills.specializations) || (resumeData.skills.frameworksTools)) && (
+                                        <section className="mb-5">
+                                            <h2 className="text-[11px] font-bold uppercase text-slate-900 tracking-wider mb-0.5">
+                                                TECHNICAL SKILLS
+                                            </h2>
+                                            <hr className="border-t border-slate-900 mb-1.5" />
+                                            <div className="space-y-1.5 text-[10px] text-slate-950">
+                                                {resumeData.skills.languages && (
+                                                    <div>
+                                                        <span className="font-bold">Languages:</span> {resumeData.skills.languages}
                                                     </div>
-                                                    <div className="text-[10px] text-slate-700 mt-2 leading-relaxed space-y-1.5 font-medium">
-                                                        {p.description.split('\n').map((line, li) => (
-                                                            line.trim() && (
-                                                                <div key={li} className="flex gap-3">
-                                                                    <span className="text-slate-300 flex-shrink-0">›</span>
-                                                                    {line}
+                                                )}
+                                                {resumeData.skills.specializations && (
+                                                    <div>
+                                                        <span className="font-bold">Specializations:</span> {resumeData.skills.specializations}
+                                                    </div>
+                                                )}
+                                                {resumeData.skills.frameworksTools && (
+                                                    <div>
+                                                        <span className="font-bold">Frameworks/Tools:</span> {resumeData.skills.frameworksTools}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {/* PROJECTS */}
+                                    {resumeData.projects && resumeData.projects.length > 0 && resumeData.projects.some(p => p.title) && (
+                                        <section className="mb-5">
+                                            <h2 className="text-[11px] font-bold uppercase text-slate-900 tracking-wider mb-0.5">
+                                                PROJECTS
+                                            </h2>
+                                            <hr className="border-t border-slate-900 mb-1.5" />
+                                            <div className="space-y-3">
+                                                {resumeData.projects.map((p, i) => (
+                                                    p.title && (
+                                                        <div key={i} className="text-[10px]">
+                                                            <div className="flex justify-between items-baseline text-slate-950 font-bold">
+                                                                <div>
+                                                                    <span>{p.title}</span>
+                                                                    {p.technologiesUsed && (
+                                                                        <span className="font-normal italic text-slate-700 ml-1.5">
+                                                                            — Skills: {p.technologiesUsed}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                            )
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )
-                                        ))}
-                                    </section>
+                                                                <div className="flex gap-2 font-bold text-[9.5px] whitespace-nowrap">
+                                                                    {p.liveLink && (
+                                                                        <a href={p.liveLink.startsWith('http') ? p.liveLink : `https://${p.liveLink}`} target="_blank" rel="noopener noreferrer" className="text-slate-950 hover:underline">
+                                                                            [Live]
+                                                                        </a>
+                                                                    )}
+                                                                    {p.liveLink && p.githubLink && <span>—</span>}
+                                                                    {p.githubLink && (
+                                                                        <a href={p.githubLink.startsWith('http') ? p.githubLink : `https://${p.githubLink}`} target="_blank" rel="noopener noreferrer" className="text-slate-950 hover:underline">
+                                                                            [GitHub]
+                                                                        </a>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {p.description && (
+                                                                <div className="mt-1 space-y-1">
+                                                                    {p.description.split('\n').map((line, li) => (
+                                                                        line.trim() && (
+                                                                            <div key={li} className="flex gap-2 text-slate-900 leading-normal pl-2 font-medium">
+                                                                                <span className="flex-shrink-0">–</span>
+                                                                                <span className="text-justify">{line.trim()}</span>
+                                                                            </div>
+                                                                        )
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
 
-                                    <section>
-                                        <h2 className="text-[14px] font-black uppercase text-slate-900 border-b-2 border-slate-100 pb-2 mb-5 tracking-[0.25em]">Technical Arsenal</h2>
-                                        <div className="space-y-3">
-                                            {resumeData.skills.technical && (
-                                                <div className="text-[10px]">
-                                                    <span className="font-black text-slate-400 uppercase text-[9px] mr-2 tracking-widest">Stack:</span>
-                                                    <span className="text-slate-800 font-bold">{resumeData.skills.technical}</span>
-                                                </div>
-                                            )}
-                                            {resumeData.skills.tools && (
-                                                <div className="text-[10px]">
-                                                    <span className="font-black text-slate-400 uppercase text-[9px] mr-2 tracking-widest">Tools:</span>
-                                                    <span className="text-slate-800 font-bold">{resumeData.skills.tools}</span>
-                                                </div>
-                                            )}
-                                            {resumeData.skills.languages && (
-                                                <div className="text-[10px]">
-                                                    <span className="font-black text-slate-400 uppercase text-[9px] mr-2 tracking-widest">Lingua:</span>
-                                                    <span className="text-slate-800 font-bold">{resumeData.skills.languages}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </section>
+                                    {/* EXPERIENCE (Optional) */}
+                                    {resumeData.experience && resumeData.experience.length > 0 && resumeData.experience.some(exp => exp.companyName) && (
+                                        <section className="mb-5">
+                                            <h2 className="text-[11px] font-bold uppercase text-slate-900 tracking-wider mb-0.5">
+                                                EXPERIENCE
+                                            </h2>
+                                            <hr className="border-t border-slate-900 mb-1.5" />
+                                            <div className="space-y-3">
+                                                {resumeData.experience.map((exp, i) => (
+                                                    exp.companyName && (
+                                                        <div key={i} className="text-[10px]">
+                                                            <div className="flex justify-between font-bold text-slate-950">
+                                                                <span>{exp.companyName}</span>
+                                                                <span>{exp.duration}</span>
+                                                            </div>
+                                                            <div className="flex justify-between italic text-slate-700 mt-0.5">
+                                                                <span>{exp.role}</span>
+                                                                <span>{exp.location || ''}</span>
+                                                            </div>
+                                                            {exp.responsibilities && (
+                                                                <div className="mt-1 space-y-1">
+                                                                    {exp.responsibilities.split('\n').map((line, li) => (
+                                                                        line.trim() && (
+                                                                            <div key={li} className="flex gap-2 text-slate-900 leading-normal pl-2 font-medium">
+                                                                                <span className="flex-shrink-0">–</span>
+                                                                                <span className="text-justify">{line.trim()}</span>
+                                                                            </div>
+                                                                        )
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {/* ACHIEVEMENTS */}
+                                    {resumeData.achievements && resumeData.achievements.awards && (
+                                        <section className="mb-5">
+                                            <h2 className="text-[11px] font-bold uppercase text-slate-900 tracking-wider mb-0.5">
+                                                ACHIEVEMENTS
+                                            </h2>
+                                            <hr className="border-t border-slate-900 mb-1.5" />
+                                            <div className="space-y-1 text-[10px]">
+                                                {resumeData.achievements.awards.split('\n').map((line, li) => (
+                                                    line.trim() && (
+                                                        <div key={li} className="flex gap-2 text-slate-900 leading-normal pl-2 font-medium">
+                                                            <span className="flex-shrink-0">–</span>
+                                                            <span className="text-justify">{line.trim()}</span>
+                                                        </div>
+                                                    )
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {/* CERTIFICATIONS (Optional) */}
+                                    {resumeData.certifications && resumeData.certifications.length > 0 && resumeData.certifications.some(c => c.name) && (
+                                        <section className="mb-5">
+                                            <h2 className="text-[11px] font-bold uppercase text-slate-900 tracking-wider mb-0.5">
+                                                CERTIFICATIONS
+                                            </h2>
+                                            <hr className="border-t border-slate-900 mb-1.5" />
+                                            <div className="space-y-1">
+                                                {resumeData.certifications.map((c, i) => (
+                                                    c.name && (
+                                                        <div key={i} className="text-[10px] flex justify-between text-slate-950 font-medium">
+                                                            <div>
+                                                                <span className="font-bold text-slate-950">{c.name}</span>
+                                                                {c.organization && <span className="italic text-slate-700"> — {c.organization}</span>}
+                                                            </div>
+                                                            {c.year && <span className="font-bold text-slate-950">{c.year}</span>}
+                                                        </div>
+                                                    )
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
                                 </div>
                             </div>
                         </div>
-
+                        
                         <div className="mt-6 flex items-center gap-3 px-6">
                             <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest opacity-60">Real-time Synchronization Active</span>
