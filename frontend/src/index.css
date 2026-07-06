@@ -95,3 +95,22 @@
   @apply bg-slate-400/20 dark:bg-white/10 rounded-full hover:bg-cyan-500/50 transition-colors;
 }
 
+/* Keyboard Accessible Focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-cyan-500/50 ring-offset-2 ring-offset-slate-900;
+}
+
+/* AI ambient highlights */
+.ai-glow-subtle {
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.15), 0 0 5px rgba(34, 211, 238, 0.1);
+}
+
+.ai-gradient-text {
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400;
+}
+
+/* Resizable divider indicator */
+.resize-handle {
+  @apply w-1.5 hover:w-2 bg-slate-200 dark:bg-slate-800 hover:bg-cyan-500/50 transition-all cursor-col-resize h-full;
+}
+

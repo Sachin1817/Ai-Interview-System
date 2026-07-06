@@ -5,7 +5,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { 
     User, LogOut, ChevronDown, Settings, Mail, UserCircle, Menu, X, 
-    Home, FileText, MessageSquare, ShieldCheck, Compass, BarChart3, Code2
+    Home, FileText, MessageSquare, ShieldCheck, Compass, BarChart3, Code2,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 // Components
@@ -66,13 +67,25 @@ const Dashboard = () => {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
-            transition: { staggerChildren: 0.15 }
+            transition: { 
+                staggerChildren: 0.1,
+                delayChildren: 0.1
+            }
         }
     };
 
     const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: { y: 0, opacity: 1 }
+        hidden: { y: 15, opacity: 0, scale: 0.98 },
+        visible: { 
+            y: 0, 
+            opacity: 1, 
+            scale: 1,
+            transition: {
+                type: "spring",
+                stiffness: 260,
+                damping: 25
+            }
+        }
     };
 
     return (
@@ -192,7 +205,7 @@ const Dashboard = () => {
 };
 
 // ─── Nav ───
-const Nav = () => {
+const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
     const { currentUser, logout } = useAuth();
     const [dropdownOpen, setDropdownOpen] = React.useState(false);
     const location = useLocation();
@@ -242,46 +255,84 @@ const Nav = () => {
     return (
         <>
         {/* Desktop Sidebar (Persistent) */}
-        <div className="fixed left-0 top-0 bottom-0 z-50 w-72 h-full bg-slate-900/40 backdrop-blur-3xl border-r border-white/5 shadow-[20px_0_50px_rgba(0,0,0,0.5)] p-8 flex flex-col hidden lg:flex">
-            <div className="flex items-center justify-between mb-12">
+        <div className={`fixed left-0 top-0 bottom-0 z-50 ${sidebarCollapsed ? 'w-20 px-3' : 'w-72 p-8'} h-full bg-slate-900/40 backdrop-blur-3xl border-r border-white/5 shadow-[20px_0_50px_rgba(0,0,0,0.5)] flex flex-col hidden lg:flex transition-all duration-300`}>
+            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} mb-12 mt-2`}>
                 <Link to="/" className="font-black text-xl tracking-tight text-white flex items-center gap-2">
                     <div className="bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg p-1 px-2.5 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/20">AI</div>
-                    <span>Placement</span>
+                    {!sidebarCollapsed && <span>Placement</span>}
                 </Link>
+                {!sidebarCollapsed && (
+                    <button 
+                        onClick={() => setSidebarCollapsed(true)}
+                        className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        title="Collapse Sidebar"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                )}
             </div>
+
+            {sidebarCollapsed && (
+                <div className="flex justify-center mb-8">
+                    <button 
+                        onClick={() => setSidebarCollapsed(false)}
+                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl border border-white/5 transition-colors"
+                        title="Expand Sidebar"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
 
             <div className="flex flex-col gap-2">
                 {navLinks.map((link) => (
                     <Link 
                         key={link.to} 
                         to={link.to}
-                        className={`group flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden ${isActive(link.to) ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.1)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                        className={`group flex items-center relative overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'p-3 justify-center' : 'px-6 py-4 gap-4'} rounded-2xl ${isActive(link.to) ? 'text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.05)]' : 'text-slate-400 hover:text-white'}`}
                     >
-                        <div className={`p-2 rounded-xl transition-colors duration-300 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'}`}>
-                            {link.icon}
-                        </div>
-                        <span className="text-lg font-bold tracking-wide">
-                            {link.label}
-                        </span>
+                        {/* Smooth active background indicator */}
                         {isActive(link.to) && (
-                            <div className="absolute left-0 w-1 bg-cyan-400 rounded-r-full" style={{ height: '60%', top: '20%' }} />
+                            <motion.div 
+                                layoutId="activeIndicator" 
+                                className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl"
+                                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                            />
+                        )}
+
+                        <div className={`p-2 rounded-xl transition-colors duration-300 relative z-10 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'}`}>
+                            <motion.div whileHover={{ rotate: 10, scale: 1.1 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+                                {link.icon}
+                            </motion.div>
+                        </div>
+                        
+                        {!sidebarCollapsed && (
+                            <span className="text-lg font-bold tracking-wide relative z-10">
+                                {link.label}
+                            </span>
                         )}
                     </Link>
                 ))}
             </div>
 
             <div className="mt-auto pt-8 border-t border-white/5">
-                <div className="bg-slate-800/30 p-4 rounded-2xl border border-white/5">
-                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Current Tier</p>
-                    <div className="flex items-center justify-between">
-                        <span className="text-white font-bold text-sm">Professional Plan</span>
+                <div className={`bg-slate-800/30 ${sidebarCollapsed ? 'p-2 text-center' : 'p-4'} rounded-2xl border border-white/5`}>
+                    {!sidebarCollapsed ? (
+                        <>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Current Tier</p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-white font-bold text-sm">Professional Plan</span>
+                                <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-black border border-cyan-500/20">PRO</span>
+                            </div>
+                        </>
+                    ) : (
                         <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-black border border-cyan-500/20">PRO</span>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
 
-        <nav className="fixed top-0 left-0 right-0 w-full lg:left-72 lg:w-[calc(100%-18rem)] px-8 py-4 bg-white/80 dark:bg-slate-950/40 backdrop-blur-3xl border-b border-slate-200 dark:border-white/5 flex justify-between lg:justify-end items-center z-[100] shadow-xl transition-all duration-300">
+        <nav className={`fixed top-0 left-0 right-0 w-full px-8 py-4 bg-white/80 dark:bg-slate-950/40 backdrop-blur-3xl border-b border-slate-200 dark:border-white/5 flex justify-between lg:justify-end items-center z-[100] shadow-xl transition-all duration-300 ${sidebarCollapsed ? 'lg:left-20 lg:w-[calc(100%-5rem)]' : 'lg:left-72 lg:w-[calc(100%-18rem)]'}`}>
             <div className="flex items-center gap-6 lg:hidden">
                 <motion.button 
                     whileHover={{ scale: 1.1 }}
@@ -319,9 +370,10 @@ const Nav = () => {
                         <AnimatePresence>
                             {dropdownOpen && (
                                 <motion.div 
-                                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                     className="absolute right-0 mt-4 w-72 glass-panel rounded-3xl border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] p-3 z-[100]"
                                 >
                                     <div className="px-5 py-4 border-b border-white/5 mb-2 text-left bg-white/10 dark:bg-white/5 rounded-2xl">
@@ -440,17 +492,19 @@ const Nav = () => {
 
 // ─── App ───
 function App() {
+    const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+
     return (
         <ThemeProvider>
             <AuthProvider>
                 <Router>
-                    <div className="bg-light-bg dark:bg-dark-bg min-h-screen text-light-text dark:text-slate-100 font-sans selection:bg-cyan-500/30 transition-colors duration-300 overflow-x-hidden lg:pl-72">
+                    <div className={`bg-light-bg dark:bg-dark-bg min-h-screen text-light-text dark:text-slate-100 font-sans selection:bg-cyan-500/30 transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
                         
                         {/* 3D Background */}
                         <FloatingBackground />
 
                         <div className="relative z-[60]">
-                            <Nav />
+                            <Nav sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
                         </div>
 
                         <div className="relative z-10">
