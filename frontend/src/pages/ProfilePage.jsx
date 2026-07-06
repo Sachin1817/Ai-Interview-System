@@ -108,7 +108,7 @@ const ProfilePage = () => {
         profileCompletion: calculateCompletion({ ...formData, profileImage: imageUrl })
       };
 
-      // 1. Optimistically write to localStorage and sync credentials
+      // 1. Instantly write to local caches (UI will reflect this immediately)
       localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(profileToSave));
       
       const localUser = localStorage.getItem('user');
@@ -123,36 +123,27 @@ const ProfilePage = () => {
         }
       }
 
-      // 2. Perform Firestore save (with a timeout race)
-      try {
-        await Promise.race([
-          saveUserProfile(currentUser.uid, profileToSave),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout saving profile")), 2500))
-        ]);
-      } catch (dbErr) {
-        console.warn("Firestore save timed out/failed, queuing in background:", dbErr);
-        // Dispatch in background so user doesn't wait
-        saveUserProfile(currentUser.uid, profileToSave).catch(err => 
-          console.error("Background Firestore save failed:", err)
-        );
-      }
-      
-      // 3. Sync with backend API
-      try {
-          await authAPI.updateProfile(profileToSave);
-      } catch (err) {
-          console.warn("Backend sync failed", err);
-      }
-      
+      // 2. Instantly update frontend state, close editing, and show success banner!
       setFormData(profileToSave);
       setIsEditing(false);
+      setSaving(false);
       setStatus({ type: 'success', message: 'Profile updated successfully!' });
       setTimeout(() => setStatus({ type: null, message: '' }), 3000);
+
+      // 3. Trigger Firestore and backend sync in the background (asynchronous)
+      // This will run concurrently and will not block the user UI at all!
+      Promise.all([
+        saveUserProfile(currentUser.uid, profileToSave),
+        authAPI.updateProfile(profileToSave)
+      ]).catch(err => {
+        console.warn("Background database/backend synchronization failed:", err);
+      });
+
     } catch (error) {
       console.error("Save profile error:", error);
       setStatus({ type: 'error', message: 'Failed to update profile. Please try again.' });
-    } finally {
       setSaving(false);
+    } finally {
       setSelectedFile(null);
     }
   };
