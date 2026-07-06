@@ -255,10 +255,10 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
     return (
         <>
         {/* Desktop Sidebar (Persistent) */}
-        <div className={`fixed left-0 top-0 bottom-0 z-50 ${sidebarCollapsed ? 'w-20 px-3' : 'w-72 p-8'} h-full bg-slate-900/40 backdrop-blur-3xl border-r border-white/5 shadow-[20px_0_50px_rgba(0,0,0,0.5)] flex flex-col hidden lg:flex transition-all duration-300`}>
+        <div className={`fixed left-0 top-0 bottom-0 z-50 ${sidebarCollapsed ? 'w-16 px-2' : 'w-72 p-8'} h-full bg-slate-900/40 backdrop-blur-3xl border-r border-white/5 shadow-[20px_0_50px_rgba(0,0,0,0.5)] flex flex-col hidden lg:flex transition-all duration-300`}>
             <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} mb-12 mt-2`}>
                 <Link to="/" className="font-black text-xl tracking-tight text-white flex items-center gap-2">
-                    <div className="bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg p-1 px-2.5 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/20">AI</div>
+                    <div className={`bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg ${sidebarCollapsed ? 'p-1 px-1.5 text-xs' : 'p-1 px-2.5 text-sm'} text-slate-950 font-black shadow-lg shadow-cyan-500/20`}>AI</div>
                     {!sidebarCollapsed && <span>Placement</span>}
                 </Link>
                 {!sidebarCollapsed && (
@@ -276,7 +276,7 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                 <div className="flex justify-center mb-8">
                     <button 
                         onClick={() => setSidebarCollapsed(false)}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl border border-white/5 transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl border border-white/5 transition-colors"
                         title="Expand Sidebar"
                     >
                         <ChevronRight className="w-5 h-5" />
@@ -289,7 +289,7 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                     <Link 
                         key={link.to} 
                         to={link.to}
-                        className={`group flex items-center relative overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'p-3 justify-center' : 'px-6 py-4 gap-4'} rounded-2xl ${isActive(link.to) ? 'text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.05)]' : 'text-slate-400 hover:text-white'}`}
+                        className={`group flex items-center relative overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'p-2 justify-center' : 'px-6 py-4 gap-4'} rounded-2xl ${isActive(link.to) ? 'text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.05)]' : 'text-slate-400 hover:text-white'}`}
                     >
                         {/* Smooth active background indicator */}
                         {isActive(link.to) && (
@@ -300,7 +300,7 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                             />
                         )}
 
-                        <div className={`p-2 rounded-xl transition-colors duration-300 relative z-10 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'}`}>
+                        <div className={`${sidebarCollapsed ? 'p-1.5' : 'p-2'} rounded-xl transition-colors duration-300 relative z-10 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'}`}>
                             <motion.div whileHover={{ rotate: 10, scale: 1.1 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
                                 {link.icon}
                             </motion.div>
@@ -332,7 +332,7 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
             </div>
         </div>
 
-        <nav className={`fixed top-0 left-0 right-0 w-full px-8 py-4 bg-white/80 dark:bg-slate-950/40 backdrop-blur-3xl border-b border-slate-200 dark:border-white/5 flex justify-between lg:justify-end items-center z-[100] shadow-xl transition-all duration-300 ${sidebarCollapsed ? 'lg:left-20 lg:w-[calc(100%-5rem)]' : 'lg:left-72 lg:w-[calc(100%-18rem)]'}`}>
+        <nav className={`fixed top-0 left-0 right-0 w-full px-8 py-4 bg-white/80 dark:bg-slate-950/40 backdrop-blur-3xl border-b border-slate-200 dark:border-white/5 flex justify-between lg:justify-end items-center z-[100] shadow-xl transition-all duration-300 ${sidebarCollapsed ? 'lg:left-16 lg:w-[calc(100%-4rem)]' : 'lg:left-72 lg:w-[calc(100%-18rem)]'}`}>
             <div className="flex items-center gap-6 lg:hidden">
                 <motion.button 
                     whileHover={{ scale: 1.1 }}
@@ -498,7 +498,7 @@ function App() {
         <ThemeProvider>
             <AuthProvider>
                 <Router>
-                    <div className={`bg-light-bg dark:bg-dark-bg min-h-screen text-light-text dark:text-slate-100 font-sans selection:bg-cyan-500/30 transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
+                    <div className={`bg-light-bg dark:bg-dark-bg min-h-screen text-light-text dark:text-slate-100 font-sans selection:bg-cyan-500/30 transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-72'}`}>
                         
                         {/* 3D Background */}
                         <FloatingBackground />

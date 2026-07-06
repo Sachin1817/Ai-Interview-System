@@ -30,16 +30,40 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       if (currentUser) {
+        // Step 1. Instant loading from local cache (if exists)
+        const cachedProfile = localStorage.getItem(`profile_${currentUser.uid}`);
+        if (cachedProfile) {
+          try {
+            const parsed = JSON.parse(cachedProfile);
+            setFormData(prev => ({ ...prev, ...parsed, email: currentUser.email }));
+            setLoading(false); // Instantly show data!
+          } catch (e) {
+            console.error("Error parsing cached profile:", e);
+          }
+        }
+
+        // Step 2. Fetch fresh data from Firestore with a 2.5s timeout race
         try {
-          const profile = await getUserProfile(currentUser.uid);
+          const profile = await Promise.race([
+            getUserProfile(currentUser.uid),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout fetching profile")), 2500))
+          ]);
+
           if (profile) {
             setFormData(prev => ({ ...prev, ...profile, email: currentUser.email }));
+            localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(profile));
           } else {
+            // New user scenario
             setFormData(prev => ({ ...prev, email: currentUser.email }));
-            setIsEditing(true); // Default to edit if new user
+            setIsEditing(true);
           }
         } catch (error) {
-          console.error("Error fetching profile:", error);
+          console.warn("Firestore profile fetch timed out or failed; using cached/empty fallback:", error);
+          if (!cachedProfile) {
+            // Fallback: let them fill out a new profile rather than hanging
+            setFormData(prev => ({ ...prev, email: currentUser.email }));
+            setIsEditing(true);
+          }
         } finally {
           setLoading(false);
         }
@@ -84,8 +108,36 @@ const ProfilePage = () => {
         profileCompletion: calculateCompletion({ ...formData, profileImage: imageUrl })
       };
 
-      await saveUserProfile(currentUser.uid, profileToSave);
+      // 1. Optimistically write to localStorage and sync credentials
+      localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(profileToSave));
       
+      const localUser = localStorage.getItem('user');
+      if (localUser) {
+        try {
+          const parsed = JSON.parse(localUser);
+          parsed.name = profileToSave.name;
+          parsed.branch = profileToSave.branch;
+          localStorage.setItem('user', JSON.stringify(parsed));
+        } catch (e) {
+          console.error("Failed to sync cached user credentials:", e);
+        }
+      }
+
+      // 2. Perform Firestore save (with a timeout race)
+      try {
+        await Promise.race([
+          saveUserProfile(currentUser.uid, profileToSave),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout saving profile")), 2500))
+        ]);
+      } catch (dbErr) {
+        console.warn("Firestore save timed out/failed, queuing in background:", dbErr);
+        // Dispatch in background so user doesn't wait
+        saveUserProfile(currentUser.uid, profileToSave).catch(err => 
+          console.error("Background Firestore save failed:", err)
+        );
+      }
+      
+      // 3. Sync with backend API
       try {
           await authAPI.updateProfile(profileToSave);
       } catch (err) {
@@ -97,6 +149,7 @@ const ProfilePage = () => {
       setStatus({ type: 'success', message: 'Profile updated successfully!' });
       setTimeout(() => setStatus({ type: null, message: '' }), 3000);
     } catch (error) {
+      console.error("Save profile error:", error);
       setStatus({ type: 'error', message: 'Failed to update profile. Please try again.' });
     } finally {
       setSaving(false);
