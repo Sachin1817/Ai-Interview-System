@@ -312,5 +312,5 @@ Developed with ❤️ by **[Sachin D](https://github.com/Sachin1817)**.
 
 ---
 <p align="center">
-  Give this repository a ⭐ if you found it useful or if it helped you land your next engineering role!
+  Give this repository a  ⭐  if you found it useful or if it helped you land your next engineering role!
 </p>
