@@ -362,7 +362,7 @@ def _get_fallback_jobs(branch, role=None, location=None):
     selected_skills = skills_map[branch_key]
     
     mock_jobs = []
-    for i in range(4):
+    for i in range(10):
         comp = selected_companies[i % len(selected_companies)]
         title = selected_titles[i % len(selected_titles)]
         if role and i == 0:
@@ -382,6 +382,70 @@ def _get_fallback_jobs(branch, role=None, location=None):
         except Exception:
             req_skills = selected_skills[:4]
         
+        # Resolve company careers URL directly
+        import urllib.parse
+        
+        company_careers_urls = {
+            "google": "https://careers.google.com",
+            "microsoft": "https://careers.microsoft.com",
+            "meta": "https://www.metacareers.com",
+            "stripe": "https://stripe.com/jobs",
+            "vercel": "https://vercel.com/careers",
+            "amazon": "https://www.amazon.jobs",
+            "netflix": "https://jobs.netflix.com",
+            "uber": "https://www.uber.com/careers",
+            "amazon web services": "https://www.amazon.jobs",
+            "cisco": "https://www.cisco.com/c/en/us/about/careers.html",
+            "cloudflare": "https://www.cloudflare.com/careers",
+            "accenture": "https://www.accenture.com/careers",
+            "tcs": "https://www.tcs.com/careers",
+            "infosys": "https://www.infosys.com/careers.html",
+            "ibm": "https://www.ibm.com/careers",
+            "intel": "https://www.intel.com/content/www/us/en/jobs/careers.html",
+            "nvidia": "https://www.nvidia.com/en-us/about-nvidia/careers",
+            "qualcomm": "https://www.qualcomm.com/company/careers",
+            "apple": "https://www.apple.com/careers",
+            "texas instruments": "https://careers.ti.com",
+            "samsung": "https://www.samsung.com/us/careers",
+            "amd": "https://www.amd.com/en/corporate/careers",
+            "tesla": "https://www.tesla.com/careers",
+            "boeing": "https://jobs.boeing.com",
+            "spacex": "https://www.spacex.com/careers",
+            "ford": "https://corporate.ford.com/careers.html",
+            "general electric": "https://www.ge.com/careers",
+            "lockheed martin": "https://www.lockheedmartinjobs.com",
+            "aecom": "https://aecom.com/careers",
+            "bechtel": "https://www.bechtel.com/careers",
+            "l&t": "https://www.larsentoubro.com/corporate/careers",
+            "jacob engineering": "https://www.jacobs.com/careers",
+            "turner construction": "https://www.turnerconstruction.com/careers",
+            "siemens": "https://new.siemens.com/global/en/company/jobs.html",
+            "ge vernova": "https://www.gevernova.com/careers",
+            "schneider electric": "https://www.se.com/ww/en/about-us/careers",
+            "abb": "https://careers.abb/global/en",
+            "tesla energy": "https://www.tesla.com/careers",
+            "exxonmobil": "https://corporate.exxonmobil.com/careers",
+            "dow chemical": "https://careers.dow.com",
+            "basf": "https://www.basf.com/global/en/careers.html",
+            "shell": "https://www.shell.com/careers.html",
+            "chevron": "https://careers.chevron.com",
+            "nasa": "https://www.nasa.gov/careers",
+            "blue origin": "https://www.blueorigin.com/careers",
+            "airbus": "https://www.airbus.com/en/careers",
+            "northrop grumman": "https://www.northropgrumman.com/careers"
+        }
+        
+        comp_lower = comp.lower()
+        apply_link = None
+        for name, url in company_careers_urls.items():
+            if name in comp_lower or comp_lower in name:
+                apply_link = url
+                break
+        
+        if not apply_link:
+            clean_name = "".join(c for c in comp_lower if c.isalnum())
+            apply_link = f"https://www.{clean_name}.com/careers"
+
         mock_jobs.append({
             "_id": f"mock_job_{branch_key.lower()}_{i}",
             "title": title,
@@ -390,7 +454,7 @@ def _get_fallback_jobs(branch, role=None, location=None):
             "jobType": j_type,
             "postedDate": posted_date,
             "salary": salary_range,
-            "applyLink": "https://google.com/search?q=" + "+".join([comp, title, "jobs"]),
+            "applyLink": apply_link,
             "skills": req_skills,
             "description": f"Exciting opportunity at {comp} to work as a {title}. You will collaborate with cross-functional teams to design, build, and deploy next-generation solutions using modern technologies including {', '.join(req_skills)}.",
             "is_external": True,
@@ -399,19 +463,134 @@ def _get_fallback_jobs(branch, role=None, location=None):
         
     return mock_jobs
 
+def fetch_detailed_apply_link(job_id, api_key, fallback_link, via_platform, company, title):
+    import requests
+    import urllib.parse
+    
+    # Standard general job boards to deprioritize in favor of company websites
+    job_boards = ["linkedin", "indeed", "glassdoor", "ziprecruiter", "simplyhired", 
+                  "monster", "careerbuilder", "jooble", "dice", "lensa", "upwork", 
+                  "fiverr", "flexjobs", "snagajob", "workingnomads", "wellfound", 
+                  "angel.co", "remote.co", "remotive", "naukri", "foundit", "shine"]
+
+    company_careers_urls = {
+        "google": "https://careers.google.com",
+        "microsoft": "https://careers.microsoft.com",
+        "meta": "https://www.metacareers.com",
+        "stripe": "https://stripe.com/jobs",
+        "vercel": "https://vercel.com/careers",
+        "amazon": "https://www.amazon.jobs",
+        "netflix": "https://jobs.netflix.com",
+        "uber": "https://www.uber.com/careers",
+        "amazon web services": "https://www.amazon.jobs",
+        "cisco": "https://www.cisco.com/c/en/us/about/careers.html",
+        "cloudflare": "https://www.cloudflare.com/careers",
+        "accenture": "https://www.accenture.com/careers",
+        "tcs": "https://www.tcs.com/careers",
+        "infosys": "https://www.infosys.com/careers.html",
+        "ibm": "https://www.ibm.com/careers",
+        "intel": "https://www.intel.com/content/www/us/en/jobs/careers.html",
+        "nvidia": "https://www.nvidia.com/en-us/about-nvidia/careers",
+        "qualcomm": "https://www.qualcomm.com/company/careers",
+        "apple": "https://www.apple.com/careers",
+        "texas instruments": "https://careers.ti.com",
+        "samsung": "https://www.samsung.com/us/careers",
+        "amd": "https://www.amd.com/en/corporate/careers",
+        "tesla": "https://www.tesla.com/careers",
+        "boeing": "https://jobs.boeing.com",
+        "spacex": "https://www.spacex.com/careers",
+        "ford": "https://corporate.ford.com/careers.html",
+        "general electric": "https://www.ge.com/careers",
+        "lockheed martin": "https://www.lockheedmartinjobs.com",
+        "aecom": "https://aecom.com/careers",
+        "bechtel": "https://www.bechtel.com/careers",
+        "l&t": "https://www.larsentoubro.com/corporate/careers",
+        "jacob engineering": "https://www.jacobs.com/careers",
+        "turner construction": "https://www.turnerconstruction.com/careers",
+        "siemens": "https://new.siemens.com/global/en/company/jobs.html",
+        "ge vernova": "https://www.gevernova.com/careers",
+        "schneider electric": "https://www.se.com/ww/en/about-us/careers",
+        "abb": "https://careers.abb/global/en",
+        "tesla energy": "https://www.tesla.com/careers",
+        "exxonmobil": "https://corporate.exxonmobil.com/careers",
+        "dow chemical": "https://careers.dow.com",
+        "basf": "https://www.basf.com/global/en/careers.html",
+        "shell": "https://www.shell.com/careers.html",
+        "chevron": "https://careers.chevron.com",
+        "nasa": "https://www.nasa.gov/careers",
+        "blue origin": "https://www.blueorigin.com/careers",
+        "airbus": "https://www.airbus.com/en/careers",
+        "northrop grumman": "https://www.northropgrumman.com/careers"
+    }
+
+    # Build a clean default fallback link pointing directly to Company Careers website
+    cleaned_fallback = fallback_link
+    company_lower = company.lower() if company else ""
+    
+    # Check if we have mapped careers page
+    matched_careers_url = None
+    if company_lower:
+        for name, url in company_careers_urls.items():
+            if name in company_lower or company_lower in name:
+                matched_careers_url = url
+                break
+        
+        if not matched_careers_url:
+            clean_name = "".join(c for c in company_lower if c.isalnum())
+            matched_careers_url = f"https://www.{clean_name}.com/careers"
+            
+    if matched_careers_url:
+        cleaned_fallback = matched_careers_url
+
+    if not job_id or not api_key:
+        return cleaned_fallback
+
+    try:
+        params = {
+            "engine": "google_jobs_listing",
+            "q": job_id,
+            "api_key": api_key
+        }
+        res = requests.get("https://serpapi.com/search.json", params=params, timeout=3)
+        if res.status_code == 200:
+            data = res.json()
+            apply_options = data.get("apply_options", [])
+            if apply_options and len(apply_options) > 0:
+                # 1. High priority: Look for explicitly marked "company site" or "company website"
+                for option in apply_options:
+                    link = option.get("link")
+                    title_opt = option.get("title", "").lower()
+                    if link and ("company site" in title_opt or "company website" in title_opt or "direct" in title_opt):
+                        return link
+                
+                # 2. Medium priority: Look for any link that is NOT in the general job boards list (usually company career portals)
+                for option in apply_options:
+                    link = option.get("link")
+                    title_opt = option.get("title", "").lower()
+                    if link and not any(board in title_opt for board in job_boards):
+                        return link
+                
+                # 3. Low priority: Return the first available link (even if it's a job board)
+                return apply_options[0].get("link", cleaned_fallback)
+    except Exception as e:
+        print(f"LOG: Error fetching detailed apply link for {job_id}: {e}")
+    
+    return cleaned_fallback
+
 def get_job_recommendations(branch, role=None, user_skills=None, location=None):
     """
     Fetch relevant job opportunities from SerpApi (Google Jobs) dynamically.
     Integrates live listings based on role and location.
-    Falls back to high-quality branch-specific opportunities if external service fails or is key-exhausted.
+    Returns strictly real-time listings or an empty list if no results are found or if the external API fails.
     """
     import requests
     import os
+    from concurrent.futures import ThreadPoolExecutor
     
     api_key = os.getenv("SERP_API_KEY")
     if not api_key:
-        print("LOG: SERP_API_KEY not found in environment, triggering local simulation engine.")
-        return _get_fallback_jobs(branch, role, location)
+        print("LOG: SERP_API_KEY not found in environment, returning empty list.")
+        return []
 
     # Use Best Fit Role if provided, else fallback to branch
     search_role = role if role else f"{branch} Developer"
@@ -438,17 +617,19 @@ def get_job_recommendations(branch, role=None, user_skills=None, location=None):
                 data = response.json()
                 
                 if "error" in data:
-                    print(f"LOG: SerpApi Error in response: {data['error']}. Triggering local fallback.")
-                    return _get_fallback_jobs(branch, role, location)
+                    print(f"LOG: SerpApi Error in response: {data['error']}. Returning empty list.")
+                    return []
                 
                 jobs_results = data.get("jobs_results", [])
                 print(f"LOG: Found {len(jobs_results)} raw results")
 
                 if not jobs_results:
-                    return _get_fallback_jobs(branch, role, location)
+                    return []
 
-                formatted_jobs = []
-                for job in jobs_results:
+                # Limit to 10 results for parallel details fetch
+                jobs_to_process = jobs_results[:10]
+
+                def process_single_job(job):
                     # Extract job type and posted date from extensions
                     extensions = job.get("extensions", [])
                     detected = job.get("detected_extensions", {})
@@ -463,20 +644,23 @@ def get_job_recommendations(branch, role=None, user_skills=None, location=None):
                         if not salary and any(x in ext.lower() for x in ["a year", "an hour", "a month"]):
                             salary = ext
 
-                    apply_link = job.get("share_link")
-                    if job.get("apply_options") and len(job["apply_options"]) > 0:
-                        apply_link = job["apply_options"][0].get("link", apply_link)
-                    elif job.get("related_links") and len(job["related_links"]) > 0:
-                        apply_link = job["related_links"][0].get("link", apply_link)
+                    via_platform = job.get("via", "")
+                    company = job.get("company_name", "")
+                    title = job.get("title", "")
+                    job_id = job.get("job_id")
+                    share_link = job.get("share_link")
+                    
+                    # Fetch the direct apply link (e.g. company careers or direct job board page)
+                    apply_link = fetch_detailed_apply_link(job_id, api_key, share_link, via_platform, company, title)
 
                     # Generate realistic skill tag recommendations based on job title/description
                     branch_key = branch if branch in ["CSE", "IT", "ECE", "Mechanical", "Civil", "EEE", "Chemical", "Aerospace"] else "CSE"
                     fallback_skills = ["React.js", "Node.js", "Python", "Docker"] if branch_key == "CSE" else ["Engineering"]
                     
-                    formatted_jobs.append({
-                        "_id": job.get("job_id", os.urandom(8).hex()),
-                        "title": job.get("title"),
-                        "company": job.get("company_name"),
+                    return {
+                        "_id": job_id if job_id else os.urandom(8).hex(),
+                        "title": title,
+                        "company": company,
                         "location": job.get("location"),
                         "jobType": job_type,
                         "postedDate": posted_date,
@@ -485,9 +669,12 @@ def get_job_recommendations(branch, role=None, user_skills=None, location=None):
                         "skills": fallback_skills, 
                         "description": job.get("description", ""),
                         "is_external": True
-                    })
+                    }
 
-                return formatted_jobs[:5] # Limit to 5 results
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    formatted_jobs = list(executor.map(process_single_job, jobs_to_process))
+
+                return formatted_jobs
             
             # If status not 200, retry
             continue
@@ -495,9 +682,9 @@ def get_job_recommendations(branch, role=None, user_skills=None, location=None):
         except Exception as e:
             print(f"LOG: SerpApi Error on attempt {attempt + 1}: {e}")
             if attempt == max_retries:
-                return _get_fallback_jobs(branch, role, location)
+                return []
     
-    return _get_fallback_jobs(branch, role, location)
+    return []
 
 
 def match_job_with_ai(job, user_skills, resume_score=0):
