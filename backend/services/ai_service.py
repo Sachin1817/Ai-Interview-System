@@ -18,9 +18,11 @@ def generate_ai_response(prompt, model_id="llama-3.3-70b-versatile", retries=3, 
     Handles client calls, error logging, and retry logic for rate limits.
     If the primary model fails or is rate limited, falls back to a secondary model.
     """
-    fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
-    models_to_try = [model_id] if model_id not in fallback_models else []
-    models_to_try.extend([m for m in fallback_models if m != model_id])
+    fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"]
+    models_to_try = [model_id]
+    for m in fallback_models:
+        if m not in models_to_try:
+            models_to_try.append(m)
 
     for current_model in models_to_try:
         attempt = 0
@@ -73,9 +75,11 @@ def generate_chat_completion(messages, model_id="llama-3.3-70b-versatile", retri
     Messages format: [{'role': 'system', 'content': '...'}, {'role': 'user', 'content': '...'}]
     Handles fallbacks.
     """
-    fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
-    models_to_try = [model_id] if model_id not in fallback_models else []
-    models_to_try.extend([m for m in fallback_models if m != model_id])
+    fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"]
+    models_to_try = [model_id]
+    for m in fallback_models:
+        if m not in models_to_try:
+            models_to_try.append(m)
 
     for current_model in models_to_try:
         attempt = 0

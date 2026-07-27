@@ -76,6 +76,11 @@ def analyze_resume(text):
         - skills: (List of strings) Extract all technical skills, frameworks, and tools.
         - soft_skills: (List of strings) Extract any soft skills like Leadership, Communication, etc.
         - score: (Integer 0-100) A realistic ATS compatibility score based on content depth and formatting.
+        - ats_breakdown: (Object) with integer scores (0-100) for:
+            - formatting: (Integer) Score for layout, standard fonts, sections layout.
+            - keywords: (Integer) Score for keyword matching density against target technical roles.
+            - impact_verbs: (Integer) Score for presence of action-oriented impact phrases.
+        - detailed_ats_feedback: (List of strings) Identify 3-4 specific ATS format guidelines or issues found (e.g. usage of icons, complex tables, formatting styles, header clarity).
         - missing_skills: (List of strings) Identify 5 critical skills/tools missing for a modern role in the user's field.
         - job_roles: (List of strings) Top 3-5 job titles the user is currently qualified for.
         - roadmap: (List of strings) A 5-step actionable plan to improve the profile for senior-level roles.
@@ -104,6 +109,16 @@ def analyze_resume(text):
         return {
             "skills": ["Python", "General Tech"],
             "score": 50,
+            "ats_breakdown": {
+                "formatting": 60,
+                "keywords": 45,
+                "impact_verbs": 55
+            },
+            "detailed_ats_feedback": [
+                "Avoid using complex multi-column layouts which can confuse ATS parser parsers.",
+                "Replace graphic-based rating circles or bars with plain text statements.",
+                "Ensure job section headers clearly use standard titles like 'Work Experience'."
+            ],
             "missing_skills": ["Cloud Computing", "System Design"],
             "job_roles": ["Software Developer"],
             "roadmap": ["Build complex projects", "Learn cloud platforms", "Practice DSA"],
