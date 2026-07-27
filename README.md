@@ -54,12 +54,17 @@
 
 ### 2. Groq-Powered Resume Hub
 * **Sub-Second Deep Audit**: Powered by **Llama 3.3-70b** via **Groq Cloud AI**, producing extensive resume evaluations in under a second.
-* **Interactive ATS Optimizer**: Evaluates industry relevance, computes compatibility coefficients, scans for target keywords, and surfaces actionable skill gaps.
+* **Interactive ATS Optimizer & Report Card**: Evaluates industry relevance, computes compatibility coefficients, scans for target keywords, and surfaces actionable skill gaps. Includes:
+  * **Dynamic Radial Progress Ring**: Glow-styled overall matching indicator.
+  * **ATS Breakdown Bars**: Individual score breakdowns for Formatting, Keywords matching, and Action Verb presence.
+  * **Detailed ATS Recommendations**: Explicit, warning-badge recommendations highlighting issues with complex tables, multi-column layouts, or missing contact details.
+* **Modern Scanning Animation Screen**: An immersive visual scanning animation screen with moving horizontal neon laser beams, glowing document brackets, and a live-scrolling CLI terminal logging engine to simulate the analysis flow.
 * **8-Step Resume Builder Wizard**: Step-by-step assistant equipped with interactive AI copy-generation for writing compelling professional summaries and technical bullet points.
 * **High-Fidelity PDF Engine**: Compiles polished, standardized, ATS-compliant, single-page professional resumes client-side using `pdf-lib`.
 
 ### 3. Dynamic AI Interview Simulation
 * **Domain-Specific Scenarios**: Real-time behavioral and technical question generation adapting precisely to custom engineering fields (CSE, ECE, ME, Civil, etc.).
+* **Polished Responsive Interface**: Fine-tuned layout elements featuring auto-scaling grid button styling and tight spacing boundaries for longer selection terms (such as Mechanical, Aerospace, and Intermediate difficulties) to prevent text overflow.
 * **Immediate Grade Analytics**: Analyzes answers dynamically to provide a detailed score card, highlighting strong points, logic flaws, and ideal sample answers.
 
 ### 4. AI Coding Interview Engine
@@ -75,6 +80,8 @@
 
 ### 6. Career Personalization Profile
 * **Academic Specialization Alignment**: Standardizes career advice based on deep engineering branch models (CS, EE, ME, etc.).
+* **Radar Pulse Loading Animation**: A futuristic rotating target/radar loading display showing pulsing concentric rings and live-scrolling CLI connection logs during profile alignment calculations.
+* **Staggered Entry Transitions**: Premium spring-loaded slide-up stagger transitions across results segments (Summary, Matching Roles, Roadmaps, Resources, and Real-Time Opportunities) for polished entrance effects.
 * **Global Configuration State**: Stores goals, preferences, and interview feedback, allowing both the AI Mentor and mock interviewers to adapt to your growth.
 
 ---
