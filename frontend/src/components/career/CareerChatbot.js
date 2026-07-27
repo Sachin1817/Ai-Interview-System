@@ -170,10 +170,33 @@ const CareerChatbot = ({ context, isInline = false }) => {
         }
     };
 
+    const renderMessageContent = (content) => {
+        const lines = content.split('\n');
+        return (
+            <div className="space-y-1.5">
+                {lines.map((line, idx) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return null;
+                    
+                    if (trimmed.startsWith('•') || trimmed.startsWith('*') || trimmed.startsWith('-')) {
+                        const cleanText = trimmed.replace(/^[•*\-\s]+/, '');
+                        return (
+                            <div key={idx} className="flex items-start gap-2 text-slate-300 leading-relaxed font-semibold">
+                                <span className="text-cyan-400 mt-1 flex-shrink-0 text-[10px]">✦</span>
+                                <span className="text-slate-300">{cleanText}</span>
+                            </div>
+                        );
+                    }
+                    return <p key={idx} className="text-slate-300 leading-relaxed font-semibold text-sm">{trimmed}</p>;
+                })}
+            </div>
+        );
+    };
+
     const ChatContainer = ({ children }) => {
         if (isInline) {
             return (
-                <div className="glass-panel rounded-[2rem] border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.4)] flex flex-col h-[750px] overflow-hidden bg-slate-900/40 backdrop-blur-3xl group transition-all duration-500 hover:shadow-cyan-500/10">
+                <div className="glass-panel rounded-[2.5rem] border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.4)] flex flex-col h-[750px] overflow-hidden bg-slate-900/40 backdrop-blur-3xl group transition-all duration-500 hover:shadow-cyan-500/10">
                     {children}
                 </div>
             );
@@ -185,7 +208,7 @@ const CareerChatbot = ({ context, isInline = false }) => {
                         initial={{ opacity: 0, scale: 0.8, y: 20, transformOrigin: 'bottom right' }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                        className="absolute bottom-24 right-0 w-[calc(100vw-2rem)] md:w-[600px] h-[calc(100vh-10rem)] md:h-[750px] max-h-[85vh] glass-panel rounded-[2.5rem] border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden bg-slate-950/90 backdrop-blur-3xl z-[1000]"
+                        className="absolute bottom-24 right-0 w-[calc(100vw-2rem)] md:w-[600px] h-[calc(100vh-10rem)] md:h-[750px] max-h-[85vh] glass-panel rounded-[2.5rem] border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden bg-slate-950/95 backdrop-blur-3xl z-[1000]"
                     >
                         {children}
                     </motion.div>
@@ -203,19 +226,19 @@ const CareerChatbot = ({ context, isInline = false }) => {
             <ChatContainer>
                 {/* Header */}
                 <div 
-                    className="p-6 border-b border-white/10 bg-white/5 flex items-center justify-between cursor-default"
+                    className="p-5 border-b border-white/5 bg-slate-900/40 backdrop-blur-md flex items-center justify-between cursor-default"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20">
-                            <Sparkles className="w-4 h-4 text-slate-950" />
+                        <div className="relative">
+                            <div className="p-2.5 bg-gradient-to-br from-cyan-400 to-indigo-500 rounded-xl shadow-lg shadow-cyan-500/10">
+                                <Sparkles className="w-4 h-4 text-slate-950" />
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-950 animate-pulse" />
                         </div>
                         <div>
-                            <h3 className="text-sm font-black text-white uppercase tracking-tight">AI Career Coach</h3>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest px-1">Active</span>
-                            </div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-wider">AI Career Coach</h3>
+                            <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">Active Assistant</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -264,7 +287,7 @@ const CareerChatbot = ({ context, isInline = false }) => {
                 {/* Chat History */}
                 <div 
                     ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-950/20"
+                    className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar bg-slate-950/20"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {chatHistory.map((chat, idx) => (
@@ -278,8 +301,8 @@ const CareerChatbot = ({ context, isInline = false }) => {
                                 <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border ${chat.role === 'user' ? 'bg-cyan-500/20 border-cyan-500/30' : 'bg-slate-800 border-white/5'}`}>
                                     {chat.role === 'user' ? <User className="w-4 h-4 text-cyan-400" /> : <Bot className="w-4 h-4 text-slate-300" />}
                                 </div>
-                                <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${chat.role === 'user' ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-tr-none border border-cyan-500/30' : 'bg-slate-800/80 text-slate-200 border border-white/5 rounded-tl-none'}`}>
-                                    {chat.content}
+                                <div className={`p-4 rounded-2xl shadow-lg border ${chat.role === 'user' ? 'bg-gradient-to-br from-cyan-500 to-indigo-600 text-white border-cyan-400/30 rounded-tr-none shadow-[0_4px_15px_rgba(6,182,212,0.15)]' : 'bg-slate-900/60 text-slate-200 border-white/5 rounded-tl-none'}`}>
+                                    {renderMessageContent(chat.content)}
                                 </div>
                             </div>
                         </motion.div>
@@ -291,8 +314,8 @@ const CareerChatbot = ({ context, isInline = false }) => {
                                     <Bot className="w-4 h-4 text-slate-400" />
                                 </div>
                                 <div className="p-4 rounded-2xl bg-white/5 text-slate-400 border border-white/5 flex items-center gap-3">
-                                    <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
-                                    <span className="text-xs italic font-medium">Analyzing your career path...</span>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                                    <span className="text-xs italic font-semibold">Analyzing your career path...</span>
                                 </div>
                             </div>
                         </div>
@@ -302,55 +325,54 @@ const CareerChatbot = ({ context, isInline = false }) => {
                 {/* Input Area */}
                 <form 
                     onSubmit={handleSend}
-                    className="p-5 border-t border-white/5 bg-slate-900/80 backdrop-blur-md"
+                    className="p-5 border-t border-white/5 bg-slate-950/60 backdrop-blur-md"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="relative group flex items-center gap-2">
-                        <div className="relative flex-1">
-                            <input 
-                                type="text"
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleSend(e);
-                                    }
-                                }}
-                                 placeholder={isListening ? "Listening... Speak now!" : "Ask about internships, roles..."}
-                                autoComplete="off"
-                                autoFocus
-                                className={`w-full bg-slate-950/50 border ${isListening ? 'border-cyan-500 shadow-glow-cyan' : 'border-white/10'} rounded-2xl py-4 pl-5 pr-14 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all font-medium relative z-[10]`}
-                            />
-                            <div className="absolute right-12 top-1/2 -translate-y-1/2 flex items-center gap-2 z-[11]">
-                                {isListening && (
-                                    <motion.div 
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="flex gap-0.5 items-center px-2 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20"
-                                    >
-                                        <div className="w-1 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                        <div className="w-1 h-5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                        <div className="w-1 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                    </motion.div>
-                                )}
-                                <button 
-                                    type="button"
-                                    onClick={toggleListening}
-                                    className={`p-2 rounded-full transition-all ${isListening ? 'text-rose-500 bg-rose-500/10 animate-pulse' : 'text-slate-500 hover:text-cyan-400'}`}
-                                >
-                                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                                </button>
-                            </div>
-
-                            <button 
-                                type="submit"
-                                disabled={!message.trim() || isLoading}
-                                className="absolute right-2 top-2 bottom-2 px-4 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl text-slate-950 font-black disabled:opacity-50 disabled:grayscale transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center shadow-lg shadow-cyan-500/20 z-[11]"
+                    <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 focus-within:border-cyan-500/40 rounded-[1.5rem] p-2.5 focus-within:ring-4 focus-within:ring-cyan-500/10 transition-all duration-300 relative z-10">
+                        <button 
+                            type="button"
+                            onClick={toggleListening}
+                            className={`p-3 rounded-xl transition-all ${isListening ? 'text-rose-400 bg-rose-500/10 animate-pulse' : 'text-slate-500 hover:text-cyan-400 hover:bg-white/5'}`}
+                            title="Speak your message"
+                        >
+                            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                        </button>
+                        
+                        {isListening && (
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="flex gap-0.5 items-center px-2 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20"
                             >
-                                <Send className="w-4 h-4" />
-                            </button>
-                        </div>
+                                <div className="w-1 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <div className="w-1 h-5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <div className="w-1 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </motion.div>
+                        )}
+                        
+                        <input 
+                            type="text"
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend(e);
+                                }
+                            }}
+                            placeholder={isListening ? "Listening... Speak now!" : "Ask about internships, roles..."}
+                            autoComplete="off"
+                            autoFocus
+                            className="flex-grow bg-transparent border-none text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-0 py-2 px-1 font-medium"
+                        />
+                        
+                        <button 
+                            type="submit"
+                            disabled={!message.trim() || isLoading}
+                            className="p-3 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl text-slate-950 font-black disabled:opacity-20 disabled:scale-100 hover:scale-[1.05] active:scale-95 transition-all shadow-md shadow-cyan-500/10"
+                        >
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        </button>
                     </div>
                 </form>
             </ChatContainer>
@@ -364,7 +386,7 @@ const CareerChatbot = ({ context, isInline = false }) => {
                         setIsOpen(!isOpen);
                         if (isOpen) window.speechSynthesis.cancel();
                     }}
-                    className={`p-5 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.3)] transition-all flex items-center justify-center relative ${isOpen ? 'bg-slate-800 text-white' : 'bg-gradient-to-br from-cyan-400 to-blue-600 text-slate-950'}`}
+                    className={`p-5 rounded-2xl shadow-2xl transition-all flex items-center justify-center relative border border-white/5 ${isOpen ? 'bg-slate-900 text-slate-400 hover:text-white' : 'bg-gradient-to-br from-cyan-400 to-blue-600 text-slate-950 shadow-cyan-500/10'}`}
                 >
                     {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
                     {!isOpen && (
