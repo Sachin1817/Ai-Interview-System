@@ -79,6 +79,7 @@ def analyze_resume(text):
         - missing_skills: (List of strings) Identify 5 critical skills/tools missing for a modern role in the user's field.
         - job_roles: (List of strings) Top 3-5 job titles the user is currently qualified for.
         - roadmap: (List of strings) A 5-step actionable plan to improve the profile for senior-level roles.
+        - location: (String) Extract the user's current city and state/location if present (e.g. "Mumbai, Maharashtra", "Bengaluru", "New Delhi"). If no location is mentioned, return "India".
         
         Your response must be ONLY the JSON object. No conversational text.
         """
@@ -105,7 +106,8 @@ def analyze_resume(text):
             "score": 50,
             "missing_skills": ["Cloud Computing", "System Design"],
             "job_roles": ["Software Developer"],
-            "roadmap": ["Build complex projects", "Learn cloud platforms", "Practice DSA"]
+            "roadmap": ["Build complex projects", "Learn cloud platforms", "Practice DSA"],
+            "location": "India"
         }
 
 

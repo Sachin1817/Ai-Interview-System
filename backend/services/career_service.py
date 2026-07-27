@@ -594,96 +594,110 @@ def get_job_recommendations(branch, role=None, user_skills=None, location=None):
 
     # Use Best Fit Role if provided, else fallback to branch
     search_role = role if role else f"{branch} Developer"
-    search_location = location if location else "India"
-
-    print(f"LOG: Role used: {search_role}")
-    print(f"LOG: Location used: {search_location}")
-
-    params = {
-        "engine": "google_jobs",
-        "q": search_role,
-        "location": search_location,
-        "api_key": api_key
-    }
-
-    max_retries = 2
-    for attempt in range(max_retries + 1):
-        try:
-            # 5 second timeout requirement
-            response = requests.get("https://serpapi.com/search.json", params=params, timeout=5)
-            print(f"LOG: API response status: {response.status_code} (Attempt {attempt + 1})")
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                if "error" in data:
-                    print(f"LOG: SerpApi Error in response: {data['error']}. Returning empty list.")
-                    return []
-                
-                jobs_results = data.get("jobs_results", [])
-                print(f"LOG: Found {len(jobs_results)} raw results")
-
-                if not jobs_results:
-                    return []
-
-                # Limit to 10 results for parallel details fetch
-                jobs_to_process = jobs_results[:10]
-
-                def process_single_job(job):
-                    # Extract job type and posted date from extensions
-                    extensions = job.get("extensions", [])
-                    detected = job.get("detected_extensions", {})
-                    
-                    job_type = "Full-time" 
-                    posted_date = detected.get("posted_at") or next((ext for ext in extensions if "ago" in ext.lower() or "yesterday" in ext.lower()), "Recently")
-                    salary = detected.get("salary")
-                    
-                    for ext in extensions:
-                        if any(x in ext.lower() for x in ["time", "internship", "contract"]):
-                            job_type = ext
-                        if not salary and any(x in ext.lower() for x in ["a year", "an hour", "a month"]):
-                            salary = ext
-
-                    via_platform = job.get("via", "")
-                    company = job.get("company_name", "")
-                    title = job.get("title", "")
-                    job_id = job.get("job_id")
-                    share_link = job.get("share_link")
-                    
-                    # Fetch the direct apply link (e.g. company careers or direct job board page)
-                    apply_link = fetch_detailed_apply_link(job_id, api_key, share_link, via_platform, company, title)
-
-                    # Generate realistic skill tag recommendations based on job title/description
-                    branch_key = branch if branch in ["CSE", "IT", "ECE", "Mechanical", "Civil", "EEE", "Chemical", "Aerospace"] else "CSE"
-                    fallback_skills = ["React.js", "Node.js", "Python", "Docker"] if branch_key == "CSE" else ["Engineering"]
-                    
-                    return {
-                        "_id": job_id if job_id else os.urandom(8).hex(),
-                        "title": title,
-                        "company": company,
-                        "location": job.get("location"),
-                        "jobType": job_type,
-                        "postedDate": posted_date,
-                        "salary": salary,
-                        "applyLink": apply_link,
-                        "skills": fallback_skills, 
-                        "description": job.get("description", ""),
-                        "is_external": True
-                    }
-
-                with ThreadPoolExecutor(max_workers=10) as executor:
-                    formatted_jobs = list(executor.map(process_single_job, jobs_to_process))
-
-                return formatted_jobs
-            
-            # If status not 200, retry
-            continue
-
-        except Exception as e:
-            print(f"LOG: SerpApi Error on attempt {attempt + 1}: {e}")
-            if attempt == max_retries:
-                return []
     
+    locations_to_try = []
+    if location:
+        locations_to_try.append(location)
+        # If it contains KA or short state codes, add clean expanded versions
+        if ", KA" in location:
+            locations_to_try.append(location.replace(", KA", ", Karnataka"))
+        elif ", MH" in location:
+            locations_to_try.append(location.replace(", MH", ", Maharashtra"))
+        elif ", DL" in location:
+            locations_to_try.append(location.replace(", DL", ", Delhi"))
+    
+    # Add progressive country and remote fallbacks
+    if not locations_to_try or locations_to_try[-1].lower() != "india":
+        locations_to_try.append("India")
+    locations_to_try.append("Remote")
+
+    for current_location in locations_to_try:
+        print(f"LOG: Trying SerpApi for role={search_role} in location={current_location}")
+        params = {
+            "engine": "google_jobs",
+            "q": search_role,
+            "location": current_location,
+            "api_key": api_key
+        }
+
+        max_retries = 1
+        for attempt in range(max_retries + 1):
+            try:
+                # 5 second timeout requirement
+                response = requests.get("https://serpapi.com/search.json", params=params, timeout=5)
+                print(f"LOG: API response status: {response.status_code} for location: {current_location} (Attempt {attempt + 1})")
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if "error" in data:
+                        print(f"LOG: SerpApi Error in response: {data['error']}. Trying next location.")
+                        break
+                    
+                    jobs_results = data.get("jobs_results", [])
+                    print(f"LOG: Found {len(jobs_results)} raw results for location: {current_location}")
+
+                    if not jobs_results:
+                        break  # Try next location
+
+                    # Limit to 8 results for parallel details fetch
+                    jobs_to_process = jobs_results[:8]
+
+                    def process_single_job(job):
+                        # Extract job type and posted date from extensions
+                        extensions = job.get("extensions", [])
+                        detected = job.get("detected_extensions", {})
+                        
+                        job_type = "Full-time" 
+                        posted_date = detected.get("posted_at") or next((ext for ext in extensions if "ago" in ext.lower() or "yesterday" in ext.lower()), "Recently")
+                        salary = detected.get("salary")
+                        
+                        for ext in extensions:
+                            if any(x in ext.lower() for x in ["time", "internship", "contract"]):
+                                job_type = ext
+                            if not salary and any(x in ext.lower() for x in ["a year", "an hour", "a month"]):
+                                salary = ext
+
+                        via_platform = job.get("via", "")
+                        company = job.get("company_name", "")
+                        title = job.get("title", "")
+                        job_id = job.get("job_id")
+                        share_link = job.get("share_link")
+                        
+                        # Fetch the direct apply link (e.g. company careers or direct job board page)
+                        apply_link = fetch_detailed_apply_link(job_id, api_key, share_link, via_platform, company, title)
+
+                        # Generate realistic skill tag recommendations based on job title/description
+                        branch_key = branch if branch in ["CSE", "IT", "ECE", "Mechanical", "Civil", "EEE", "Chemical", "Aerospace"] else "CSE"
+                        fallback_skills = ["React.js", "Node.js", "Python", "Docker"] if branch_key == "CSE" else ["Engineering"]
+                        
+                        return {
+                            "_id": job_id if job_id else os.urandom(8).hex(),
+                            "title": title,
+                            "company": company,
+                            "location": job.get("location"),
+                            "jobType": job_type,
+                            "postedDate": posted_date,
+                            "salary": salary,
+                            "applyLink": apply_link,
+                            "skills": fallback_skills, 
+                            "description": job.get("description", ""),
+                            "is_external": True
+                        }
+
+                    with ThreadPoolExecutor(max_workers=8) as executor:
+                        formatted_jobs = list(executor.map(process_single_job, jobs_to_process))
+
+                    return formatted_jobs
+                
+                # If status not 200, retry
+                continue
+
+            except Exception as e:
+                print(f"LOG: SerpApi Error on attempt {attempt + 1} for location {current_location}: {e}")
+                if attempt == max_retries:
+                    break  # Try next location
+        
     return []
 
 

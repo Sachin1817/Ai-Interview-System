@@ -95,17 +95,54 @@ def get_analytics(user_id):
     }), 200
 
 @career_bp.route('/jobs/recommendations', methods=['POST'])
-def jobs_recommendations():
+@token_required
+def jobs_recommendations(user_id):
     """
-    Public or private route to get job suggestions.
+    Private route to get job suggestions.
+    Analyzes the user's resume location/locality to find jobs nearby.
     """
-    data = request.get_json()
+    data = request.get_json() or {}
     branch = data.get("branch", "CSE")
     role = data.get("role")
     skills = data.get("skills", [])
-    location = data.get("location") # NEW: User state/location
+    location = data.get("location")
     
-    jobs = get_job_recommendations(branch, role, skills, location)
+    # 1. Analyze user resume to extract location/locality
+    extracted_location = None
+    try:
+        resume = resumes_col.find_one({"user_id": user_id})
+        if resume:
+            diagnosis = resume.get("diagnosis", {})
+            extracted_location = diagnosis.get("location")
+            
+            # If not already cached/extracted in diagnosis, extract on-the-fly from raw resume text
+            if not extracted_location and resume.get("text"):
+                from services.ai_service import generate_ai_response
+                prompt = f"""
+                You are a location extraction expert.
+                Extract the candidate's current city/state/country (locality) from the following resume text.
+                
+                RESUME TEXT:
+                {resume.get("text")}
+                
+                Output ONLY the location as a single string (e.g., "Mumbai, Maharashtra", "Bengaluru", "New Delhi").
+                If no location or contact address is present in the resume, return "India".
+                Do not include any other words, preamble, or markdown formatting.
+                """
+                loc_res = generate_ai_response(prompt)
+                if loc_res:
+                    extracted_location = loc_res.strip()
+                    # Cache the location in the diagnosis dictionary
+                    diagnosis["location"] = extracted_location
+                    resumes_col.update_one({"user_id": user_id}, {"$set": {"diagnosis": diagnosis}})
+    except Exception as e:
+        print(f"DEBUG [Jobs]: Error extracting location from resume: {e}")
+
+    # Use the extracted location if available, otherwise fall back to location from payload, otherwise "India"
+    final_location = extracted_location or location or "India"
+    print(f"DEBUG [Jobs]: Finding jobs for role={role or branch} in location={final_location}")
+    
+    jobs = get_job_recommendations(branch, role, skills, final_location)
     return jsonify(jobs), 200
 
 @career_bp.route('/jobs/match', methods=['POST'])
