@@ -75,7 +75,13 @@ def analyze_resume(text):
         Provide your analysis strictly in JSON format with these exact keys:
         - skills: (List of strings) Extract all technical skills, frameworks, and tools.
         - soft_skills: (List of strings) Extract any soft skills like Leadership, Communication, etc.
-        - score: (Integer 0-100) A realistic ATS compatibility score based on content depth and formatting.
+        - score: (Integer 0-100) Calculate a realistic, critical ATS compatibility score by strictly summing the following components based on the actual content:
+            1. Contact Info & Education (up to 10 points): Deduct if email, phone, or degree details are missing.
+            2. Core Section Structure (up to 20 points): Deduct if Experience, Projects, or Skills sections are missing or poorly defined.
+            3. Technical Skill Depth (up to 30 points): Score based on the variety and relevance of technical tools/skills listed.
+            4. Impact Metrics & Action Verbs (up to 20 points): Score based on quantifiable achievements (%, $, metrics) and action-oriented phrasing. If no numbers/percentages are used, score this component under 5.
+            5. Layout & Parseability (up to 20 points): Score based on standard document flow (deduct if text seems disorganized or contains graphics).
+            Total the score critically. It should vary naturally between 30 and 95 depending on the resume's actual quality. Do not default to 85.
         - ats_breakdown: (Object) with integer scores (0-100) for:
             - formatting: (Integer) Score for layout, standard fonts, sections layout.
             - keywords: (Integer) Score for keyword matching density against target technical roles.
