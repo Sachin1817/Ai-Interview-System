@@ -106,7 +106,7 @@ const SetupScreen = ({ onStart }) => {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {BRANCHES.map(b => (
                                     <button key={b} onClick={() => handleBranchChange(b)}
-                                        className={`py-3 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${branch === b
+                                        className={`py-3 px-1.5 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all border ${branch === b
                                             ? 'bg-cyan-500/10 text-cyan-500 border-cyan-500 shadow-glow-cyan active:scale-95'
                                             : 'bg-white/50 dark:bg-slate-900/50 text-slate-500 border-slate-200 dark:border-slate-800 hover:border-cyan-500/30'
                                             }`}>{b}</button>
@@ -127,7 +127,7 @@ const SetupScreen = ({ onStart }) => {
                                     };
                                     return (
                                         <button key={d} onClick={() => setDifficulty(d)}
-                                            className={`py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border ${isActive
+                                            className={`py-4 px-1 rounded-2xl font-black text-[9px] uppercase tracking-wider transition-all border ${isActive
                                                 ? `bg-${colors[d]}-500/10 text-${colors[d]}-500 border-${colors[d]}-500 shadow-glow-${colors[d]} scale-[1.02]`
                                                 : 'bg-white/50 dark:bg-slate-900/50 text-slate-500 border-slate-200 dark:border-slate-800 hover:border-slate-400'
                                                 }`}>{d}</button>
