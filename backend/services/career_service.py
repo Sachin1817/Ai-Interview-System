@@ -551,7 +551,7 @@ def fetch_detailed_apply_link(job_id, api_key, fallback_link, via_platform, comp
             "q": job_id,
             "api_key": api_key
         }
-        res = requests.get("https://serpapi.com/search.json", params=params, timeout=3)
+        res = requests.get("https://serpapi.com/search.json", params=params, timeout=8)
         if res.status_code == 200:
             data = res.json()
             apply_options = data.get("apply_options", [])
@@ -623,8 +623,8 @@ def get_job_recommendations(branch, role=None, user_skills=None, location=None):
         max_retries = 1
         for attempt in range(max_retries + 1):
             try:
-                # 5 second timeout requirement
-                response = requests.get("https://serpapi.com/search.json", params=params, timeout=5)
+                # 15 second timeout to allow scraping API to complete
+                response = requests.get("https://serpapi.com/search.json", params=params, timeout=15)
                 print(f"LOG: API response status: {response.status_code} for location: {current_location} (Attempt {attempt + 1})")
                 
                 if response.status_code == 200:
