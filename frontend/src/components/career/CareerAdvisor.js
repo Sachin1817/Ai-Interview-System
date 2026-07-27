@@ -331,9 +331,59 @@ const CareerAdvisor = () => {
                 )}
 
                 {loading && (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <Loader2 className="w-12 h-12 text-emerald-400 animate-spin" />
-                        <p className="text-slate-400">Analyzing your profile...</p>
+                    <div className="flex flex-col items-center justify-center py-24 gap-8">
+                        {/* Immersive Pulse/Radar Ring Graphic */}
+                        <div className="relative w-40 h-40 flex items-center justify-center">
+                            {/* Inner core */}
+                            <div className="absolute w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center text-slate-950 font-black">
+                                <Sparkles className="w-5 h-5 animate-pulse text-slate-950" />
+                            </div>
+                            
+                            {/* Outer pulsing ring 1 */}
+                            <motion.div 
+                                className="absolute w-24 h-24 rounded-full border border-emerald-500/30 fill-none"
+                                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                            />
+                            
+                            {/* Outer pulsing ring 2 */}
+                            <motion.div 
+                                className="absolute w-36 h-36 rounded-full border border-cyan-500/20 fill-none"
+                                animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.4, 0.1] }}
+                                transition={{ repeat: Infinity, duration: 3, delay: 0.5, ease: "easeInOut" }}
+                            />
+                            
+                            {/* Sweeping radar line */}
+                            <motion.div 
+                                className="absolute w-40 h-40 rounded-full border-t-2 border-r-2 border-emerald-400/20"
+                                animate={{ rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+                            />
+                        </div>
+
+                        {/* Status Message */}
+                        <div className="text-center space-y-3">
+                            <h3 className="text-xl font-bold text-white tracking-wide uppercase flex items-center justify-center gap-2">
+                                <Loader2 className="animate-spin w-5 h-5 text-emerald-400" />
+                                Aligning Career Vector
+                            </h3>
+                            <p className="text-xs text-emerald-400 font-bold uppercase tracking-widest animate-pulse px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 inline-block">
+                                Analyzing Profile & Industry Gaps
+                            </p>
+                        </div>
+
+                        {/* Interactive Status Log */}
+                        <div className="w-full max-w-sm bg-slate-950/70 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-slate-500 text-left space-y-2.5 shadow-inner">
+                            <div className="flex justify-between text-slate-600 font-bold uppercase border-b border-white/5 pb-1">
+                                <span>Engine Logs</span>
+                                <span className="text-emerald-500 animate-pulse">Running</span>
+                            </div>
+                            <div className="text-emerald-400">✔ Loaded Profile Credentials</div>
+                            <div className="text-emerald-400/80">✔ Extracted Skills Signature</div>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="text-cyan-400">✔ Querying Global Job Openings...</motion.div>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.2 }} className="text-slate-400">⟳ Calculating Specialization match scores...</motion.div>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.5 }} className="text-slate-500">⟳ Building Personalized Learning Roadmap...</motion.div>
+                        </div>
                     </div>
                 )}
 
