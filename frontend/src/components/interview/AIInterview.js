@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Clock, ChevronRight, Send, Trophy, Target, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '../../services/api';
+import AILoadingOverlay from '../layout/AILoadingOverlay';
 
 const BRANCHES = ['CSE', 'IT', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Chemical', 'Aerospace'];
 const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'];
@@ -51,64 +52,7 @@ const BRANCH_ROLES = {
     },
 };
 
-// ── AI Loading Overlay ──
-const AILoadingOverlay = () => {
-    const statuses = [
-        "Analyzing Job Role Requirements...",
-        "Synthesizing Technical Questions...",
-        "Calibrating Difficulty levels...",
-        "Preparing AI Interviewer Personality...",
-        "Initializing NLP Evaluation Core..."
-    ];
-    const [msgIdx, setMsgIdx] = useState(0);
-
-    useEffect(() => {
-        const i = setInterval(() => setMsgIdx(p => (p + 1) % statuses.length), 1200);
-        return () => clearInterval(i);
-    }, []);
-
-    return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-2xl">
-            <div className="relative w-64 h-64 mb-16">
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 rounded-[3rem] border-2 border-cyan-500/20 shadow-[0_0_80px_rgba(34,211,238,0.1)]" />
-                <motion.div animate={{ rotate: -360 }} transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-8 rounded-[2rem] border-2 border-purple-500/20" />
-                <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 4, repeat: Infinity }}
-                    className="absolute inset-20 bg-premium-gradient rounded-3xl flex items-center justify-center shadow-glow-primary">
-                    <span className="text-5xl drop-shadow-2xl">🤖</span>
-                </motion.div>
-                
-                {/* Orbiting particles */}
-                {[...Array(12)].map((_, i) => (
-                    <motion.div key={i}
-                        animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], x: [0, Math.cos(i * 30 * Math.PI / 180) * 120], y: [0, Math.sin(i * 30 * Math.PI / 180) * 120] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
-                        className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-glow-cyan" />
-                ))}
-            </div>
-            
-            <div className="text-center space-y-4 max-w-md px-6">
-                <AnimatePresence mode="wait">
-                    <motion.h3 key={msgIdx} 
-                        initial={{ opacity: 0, y: 10 }} 
-                        animate={{ opacity: 1, y: 0 }} 
-                        exit={{ opacity: 0, y: -10 }}
-                        className="text-2xl font-black text-white tracking-tight uppercase">
-                        {statuses[msgIdx]}
-                    </motion.h3>
-                </AnimatePresence>
-                <div className="flex justify-center gap-1">
-                    {statuses.map((_, i) => (
-                        <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === msgIdx ? 'w-8 bg-cyan-500 shadow-glow-cyan' : 'w-2 bg-slate-800'}`} />
-                    ))}
-                </div>
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] pt-4 animate-pulse">Neural Interviewer Engaged</p>
-            </div>
-        </motion.div>
-    );
-};
+// AILoadingOverlay is now imported from ../layout/AILoadingOverlay
 
 // ─────── Setup Screen ───────
 const SetupScreen = ({ onStart }) => {
@@ -246,9 +190,21 @@ const SetupScreen = ({ onStart }) => {
                     </div>
                 </div>
             </div>
-            
             <AnimatePresence>
-                {loading && <AILoadingOverlay />}
+                {loading && (
+                    <AILoadingOverlay 
+                        statuses={[
+                            "Analyzing Job Role Requirements...",
+                            "Synthesizing Technical Questions...",
+                            "Calibrating Difficulty levels...",
+                            "Preparing AI Interviewer Personality...",
+                            "Initializing NLP Evaluation Core..."
+                        ]}
+                        subtitle="Neural Interviewer Engaged"
+                        iconType="robot"
+                        themeColor="cyan"
+                    />
+                )}
             </AnimatePresence>
         </motion.div>
     );

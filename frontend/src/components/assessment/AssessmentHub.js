@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, Clock, AlertCircle, BrainCircuit, Zap, ArrowRight, Star, RefreshCw, Layers, Terminal, Activity, ChevronRight } from 'lucide-react';
 import { MCQ_BANK } from '../../data/mcqBank';
 import api from '../../services/api';
+import AILoadingOverlay from '../layout/AILoadingOverlay';
 
 const CATEGORY_MAP = {
     Technical: { icon: <Terminal className="w-5 h-5" />, color: 'cyan', label: 'Technical Accuracy', branches: ['CSE', 'IT', 'ECE', 'EEE', 'ME', 'Civil'] },
@@ -33,81 +34,6 @@ const QuizTimer = ({ duration, onExpire }) => {
                 {Math.floor(t / 60)}:{String(t % 60).padStart(2, '0')}
             </span>
         </div>
-    );
-};
-
-// ── AI Loading Overlay ──
-const AILoadingOverlay = () => {
-    const statuses = [
-        "Initializing Neural Pathways...",
-        "Accessing Knowledge Base...",
-        "Simulating Test Scenarios...",
-        "Synthesizing Assessment Questions...",
-        "Optimizing Difficulty Curves..."
-    ];
-    const [msgIdx, setMsgIdx] = useState(0);
-
-    useEffect(() => {
-        const i = setInterval(() => setMsgIdx(p => (p + 1) % statuses.length), 1500);
-        return () => clearInterval(i);
-    }, []);
-
-    return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-2xl">
-            <div className="relative w-64 h-64 mb-16">
-                <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-[100px] animate-pulse" />
-                <motion.div 
-                    animate={{ rotate: 360 }} 
-                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 rounded-full border-[3px] border-t-cyan-500 border-r-transparent border-b-purple-500 border-l-transparent opacity-60 shadow-glow-cyan" 
-                />
-                <motion.div 
-                    animate={{ rotate: -360 }} 
-                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-6 rounded-full border-[2px] border-t-rose-500 border-r-transparent border-b-blue-500 border-l-transparent opacity-40" 
-                />
-                <motion.div 
-                    animate={{ scale: [1, 1.15, 1] }} 
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute inset-20 bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-glow-primary"
-                >
-                    <div className="w-12 h-12 bg-white/20 rounded-full backdrop-blur-md flex items-center justify-center">
-                        <BrainCircuit className="w-6 h-6 text-white" />
-                    </div>
-                </motion.div>
-                
-                {[...Array(12)].map((_, i) => (
-                    <motion.div key={i}
-                        animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], y: [0, -20, 0] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
-                        style={{ transform: `rotate(${i * 30}deg) translateY(-110px)` }}
-                        className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-cyan-400 rounded-full" 
-                    />
-                ))}
-            </div>
-            <div className="text-center max-w-sm px-8">
-                <AnimatePresence mode="wait">
-                    <motion.h3 
-                        key={msgIdx} 
-                        initial={{ opacity: 0, y: 10 }} 
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="text-2xl font-black text-white mb-4 tracking-tight"
-                    >
-                        {statuses[msgIdx]}
-                    </motion.h3>
-                </AnimatePresence>
-                <div className="flex items-center justify-center gap-3">
-                    <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce" />
-                    <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce [animation-delay:0.4s]" />
-                </div>
-                <p className="text-slate-500 mt-8 text-[10px] uppercase font-black tracking-[0.4em] opacity-60">
-                    Quantized Engine V3.5 Active
-                </p>
-            </div>
-        </motion.div>
     );
 };
 
@@ -326,9 +252,21 @@ const AssessmentSetup = ({ onStart }) => {
                     START QUIZ <ChevronRight className="w-5 h-5 ms-2 group-hover:translate-x-1 transition-transform" />
                 </button>
             </div>
-            
             <AnimatePresence>
-                {loading && <AILoadingOverlay />}
+                {loading && (
+                    <AILoadingOverlay 
+                        statuses={[
+                            "Initializing Neural Pathways...",
+                            "Accessing Knowledge Base...",
+                            "Simulating Test Scenarios...",
+                            "Synthesizing Assessment Questions...",
+                            "Optimizing Difficulty Curves..."
+                        ]}
+                        subtitle="Cognitive Core Engaged"
+                        iconType="brain"
+                        themeColor="purple"
+                    />
+                )}
             </AnimatePresence>
         </motion.div>
     );

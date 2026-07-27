@@ -111,9 +111,13 @@ def get_branch_roles(branch):
 
 def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n=10):
     """
-    Generate n unique interview questions using Gemini AI.
+    Generate n unique interview questions using Gemini/Groq AI.
     """
     print(f"DEBUG: Generating {n} interview questions for {branch} - {role} ({difficulty})")
+    
+    role_topics = ROLE_TOPIC_MAP.get(role, []) if role else []
+    role_context = f"\n        - Relevant Domain Topics to Focus On: {', '.join(role_topics)}" if role_topics else ""
+    
     # Generate a unique seed for this session to ensure randomness
     random_seed = f"{datetime.datetime.now().timestamp()}_{branch}_{role}"
     
@@ -123,15 +127,16 @@ def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n
         
         Candidate Profile:
         - Branch: {branch}
-        - Target Role: {role or 'General Engineer'}
+        - Target Role: {role or 'General Engineer'}{role_context}
         - Difficulty: {difficulty}
         - Diversity Seed: {random_seed}
         
         Requirements (Unique & Diverse):
-        1. Contextual & Unique: Each question must be 2-3 sentences long with a unique scenario. Avoid generic "What is X" questions.
-        2. Role Deep-Dive: High relevance to {role}. Focus on real-world applications and problem-solving.
-        3. No Repetition: Do not repeat concepts across questions. Ensure a wide coverage of {branch} and {role} topics.
-        4. Structure: {n-1} Technical questions, 1 Behavioral/Scenario question.
+        1. Contextual & Unique: Each question must be 2-3 sentences long, describing a realistic system design, debugging, or optimization scenario. Avoid generic definitions or simple "What is X" questions.
+        2. Role Deep-Dive: High relevance to the selected target role ({role or 'General Engineer'}). Focus on real-world applications, engineering trade-offs, and scenario-based problem-solving.
+        3. Difficulty Alignment: Ensure the question depth matches the '{difficulty}' level (e.g., basic concepts/troubleshooting for Beginner, design trade-offs and performance optimizations for Advanced).
+        4. No Repetition: Do not repeat concepts across questions. Ensure a wide coverage of the target role's core domain topics.
+        5. Structure: {n-1} Technical questions, 1 Behavioral/Scenario question.
         
         Output format:
         [
@@ -161,10 +166,23 @@ def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n
         
     except Exception as e:
         print(f"AI Interview Generation Error: {e}. Falling back to static bank.")
-        # Fallback to current static logic
+        # Fallback to static logic, filtered by role topics if possible
         branch_data = QUESTION_BANK.get(branch, QUESTION_BANK.get("CSE"))
         domain_pool = branch_data.get(difficulty, branch_data.get("Beginner", []))
-        technical_qs = random.sample(domain_pool, min(n-1, len(domain_pool)))
+        
+        role_pool = []
+        if role and role_topics:
+            role_topics_lower = [t.lower() for t in role_topics]
+            role_pool = [q for q in domain_pool if q.get("topic", "").lower() in role_topics_lower]
+        
+        if len(role_pool) >= n - 1:
+            technical_qs = random.sample(role_pool, n - 1)
+        else:
+            remaining_needed = (n - 1) - len(role_pool)
+            general_pool = [q for q in domain_pool if q not in role_pool]
+            sample_size = min(remaining_needed, len(general_pool))
+            technical_qs = role_pool + random.sample(general_pool, sample_size)
+            
         hr_pool = COMMON_QUESTIONS.get("HR", [])
         hr_qs = random.sample(hr_pool, 1) if hr_pool else []
         
@@ -178,12 +196,12 @@ def evaluate_answer_nlp(question, answer, topic):
     """
     if not answer or len(answer.strip()) < 5:
         return {
-            "technical_score": 0, "relevance_score": 0, "completeness_score": 0,
-            "communication_score": 2, "confidence_score": 0, "overall_score": 1,
+            "technical_score": 0.0, "relevance_score": 0.0, "completeness_score": 0.0,
+            "communication_score": 0.0, "confidence_score": 0.0, "overall_score": 0.0,
             "feedback": "No answer provided or answer too short."
         } if not answer else {
-            "technical_score": 0, "relevance_score": 0, "completeness_score": 0,
-            "communication_score": 2, "confidence_score": 0, "overall_score": 1,
+            "technical_score": 0.0, "relevance_score": 0.0, "completeness_score": 0.0,
+            "communication_score": 0.0, "confidence_score": 0.0, "overall_score": 0.0,
             "feedback": "The answer is too brief to indicate any understanding."
         }
 
