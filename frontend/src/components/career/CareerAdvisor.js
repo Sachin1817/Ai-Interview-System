@@ -6,6 +6,29 @@ import CareerChatbot from './CareerChatbot';
 
 const BRANCHES = ['CSE', 'IT', 'ECE', 'EEE', 'Mechanical', 'Civil', 'Chemical', 'Aerospace'];
 
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.12
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { 
+        opacity: 1, 
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 260,
+            damping: 25
+        }
+    }
+};
+
 // Circular progress ring
 const Ring = ({ value, max = 100, color, size = 80, label }) => {
     const r = (size / 2) - 6;
@@ -388,10 +411,14 @@ const CareerAdvisor = () => {
                 )}
 
                 {mode === 'result' && advice && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-
+                    <motion.div 
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="space-y-8"
+                    >
                         {/* Header info */}
-                        <div className="glass-panel p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+                        <motion.div variants={itemVariants} className="glass-panel p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <h2 className="text-xl font-bold text-white">Your Career Analysis — <span className="text-emerald-400">{advice.branch}</span></h2>
                                 <p className="text-slate-400 text-sm mt-1">Best fit role: <strong className="text-cyan-400">{advice.best_role}</strong></p>
@@ -401,20 +428,20 @@ const CareerAdvisor = () => {
                                     <Ring key={r.role} value={r.match_percentage} color="#34d399" size={72} label="Profile Match" />
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
 
                         {/* Role Cards */}
-                        <div>
+                        <motion.div variants={itemVariants}>
                             <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2"><Briefcase className="w-5 h-5 text-cyan-400" />Matching Career Roles</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {advice.top_roles?.map((role, i) => (
                                     <RoleCard key={role.role} role={role} isTop={i === 0} />
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
 
                         {/* Personalized Roadmap */}
-                        <div className="glass-card p-8 rounded-3xl">
+                        <motion.div variants={itemVariants} className="glass-card p-8 rounded-3xl">
                             <h3 className="text-lg font-bold text-purple-400 mb-6 flex items-center gap-2"><Target className="w-5 h-5" />Your Personalized Roadmap</h3>
                             <div className="space-y-4">
                                 {advice.improvement_roadmap?.map((step, i) => (
@@ -426,10 +453,10 @@ const CareerAdvisor = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
 
                         {/* Resources */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="glass-card p-6 rounded-2xl">
                                 <h3 className="font-bold text-emerald-400 flex items-center gap-2 mb-4"><BookOpen className="w-4 h-4" />Free Learning Resources</h3>
                                 <ul className="space-y-2">
@@ -450,11 +477,11 @@ const CareerAdvisor = () => {
                                     ))}
                                 </ul>
                             </div>
-                        </div>
+                        </motion.div>
 
                         {/* Certifications for best role */}
                         {advice.top_roles?.[0]?.certifications?.length > 0 && (
-                            <div className="glass-card p-6 rounded-2xl">
+                            <motion.div variants={itemVariants} className="glass-card p-6 rounded-2xl">
                                 <h3 className="font-bold text-yellow-400 flex items-center gap-2 mb-4"><Award className="w-4 h-4" />Recommended Certifications for {advice.best_role}</h3>
                                 <div className="flex flex-wrap gap-3">
                                     {advice.top_roles[0].certifications.map(cert => (
@@ -463,12 +490,12 @@ const CareerAdvisor = () => {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* Internship roles to target */}
                         {advice.top_roles?.[0]?.internships?.length > 0 && (
-                            <div className="glass-card p-6 rounded-2xl">
+                            <motion.div variants={itemVariants} className="glass-card p-6 rounded-2xl">
                                 <h3 className="font-bold text-cyan-400 flex items-center gap-2 mb-4"><Briefcase className="w-4 h-4" />Internship Roles to Target</h3>
                                 <div className="flex flex-wrap gap-3">
                                     {advice.top_roles.flatMap(r => r.internships).slice(0, 6).map(role => (
@@ -477,11 +504,11 @@ const CareerAdvisor = () => {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* Smart Opportunity Recommendations */}
-                        <div className="pt-8 border-t border-white/5">
+                        <motion.div variants={itemVariants} className="pt-8 border-t border-white/5">
                             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
                                 <div className="p-2 bg-gradient-to-br from-indigo-400 to-blue-600 rounded-xl shadow-lg shadow-indigo-500/20">
                                     <Zap className="w-5 h-5 text-slate-950" />
@@ -516,7 +543,7 @@ const CareerAdvisor = () => {
                                     <p className="text-slate-400">No specific openings found for this role yet. We'll alert you when matching positions open up.</p>
                                 </div>
                             )}
-                        </div>
+                        </motion.div>
 
                         <button onClick={() => setMode('select')}
                             className="text-slate-500 hover:text-slate-300 transition-colors text-sm mt-8 block">
