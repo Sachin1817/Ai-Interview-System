@@ -3,6 +3,10 @@ from services.ai_service import generate_ai_response
 import os
 import json
 import uuid
+from utils.auth_helper import token_required
+from utils.db import get_db
+from datetime import datetime
+import datetime as dt_module
 
 def _clean_json_response(raw_text):
     """Utility to extract JSON from model response that may contain markdown or extra text."""
@@ -179,5 +183,78 @@ def generate_assessment():
             
     except Exception as e:
         print("DEBUG [Assessment]: Error:", str(e))
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+db = get_db()
+assessments_col = db['assessments']
+
+@assessment_bp.route('/save', methods=['POST'])
+@token_required
+def save_assessment(user_id):
+    try:
+        data = request.json or {}
+        category = data.get('category', 'Technical')
+        topic = data.get('topic', 'General')
+        difficulty = data.get('difficulty', 'Beginner')
+        score = data.get('score', 0)
+        total_questions = data.get('total_questions', 10)
+        correct_answers = data.get('correct_answers', 0)
+        
+        assessments_col.insert_one({
+            "user_id": user_id,
+            "category": category,
+            "topic": topic,
+            "difficulty": difficulty,
+            "score": score,
+            "total_questions": total_questions,
+            "correct_answers": correct_answers,
+            "completed_at": datetime.utcnow()
+        })
+        return jsonify({"status": "success", "message": "Assessment score saved successfully"}), 200
+    except Exception as e:
+        print("DEBUG [Assessment]: Save Error:", str(e))
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@assessment_bp.route('/stats', methods=['GET'])
+@token_required
+def get_assessment_stats(user_id):
+    try:
+        user_docs = list(assessments_col.find({"user_id": user_id}))
+        completed_quizzes = len(user_docs)
+        
+        if completed_quizzes > 0:
+            average_score = round(sum(doc.get('score', 0) for doc in user_docs) / completed_quizzes)
+        else:
+            average_score = 0
+            
+        # Streak calculation
+        dates = set()
+        for doc in user_docs:
+            if 'completed_at' in doc:
+                completed_time = doc['completed_at']
+                if isinstance(completed_time, datetime):
+                    dates.add(completed_time.date())
+        
+        streak = 0
+        if dates:
+            today = dt_module.date.today()
+            yesterday = today - dt_module.timedelta(days=1)
+            
+            current_date = today
+            if current_date not in dates:
+                current_date = yesterday
+                
+            while current_date in dates:
+                streak += 1
+                current_date -= dt_module.timedelta(days=1)
+                
+        return jsonify({
+            "completed_quizzes": completed_quizzes,
+            "average_score": average_score,
+            "streak": streak
+        }), 200
+    except Exception as e:
+        print("DEBUG [Assessment]: Stats Error:", str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
 

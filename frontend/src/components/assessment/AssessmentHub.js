@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Clock, AlertCircle, BrainCircuit, Zap, ArrowRight
 import { MCQ_BANK } from '../../data/mcqBank';
 import api from '../../services/api';
 import AILoadingOverlay from '../layout/AILoadingOverlay';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CATEGORY_MAP = {
     Technical: { icon: <Terminal className="w-5 h-5" />, color: 'cyan', label: 'Technical Accuracy', branches: ['CSE', 'IT', 'ECE', 'EEE', 'ME', 'Civil'] },
@@ -227,19 +228,44 @@ const AssessmentSetup = ({ onStart }) => {
                     <div className="pt-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 block">Difficulty Level</label>
                         <div className="grid grid-cols-3 gap-4">
-                            {['Beginner', 'Intermediate', 'Advanced'].map(d => (
-                                <button 
-                                    key={d} 
-                                    onClick={() => setDiff(d)}
-                                    className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${
-                                        diff === d 
-                                        ? 'bg-purple-500/10 border-purple-500/50 text-purple-400 shadow-glow-purple' 
-                                        : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/10 hover:text-slate-400'
-                                    }`}
-                                >
-                                    {d}
-                                </button>
-                            ))}
+                            {['Beginner', 'Intermediate', 'Advanced'].map(d => {
+                                const emojis = { Beginner: '🟢', Intermediate: '🟡', Advanced: '🔴' };
+                                const shadowGlows = {
+                                    Beginner: 'shadow-[0_0_20px_rgba(16,185,129,0.35)]',
+                                    Intermediate: 'shadow-[0_0_20px_rgba(234,179,8,0.35)]',
+                                    Advanced: 'shadow-[0_0_20px_rgba(244,63,94,0.35)]'
+                                };
+                                const textColors = {
+                                    Beginner: 'text-emerald-400',
+                                    Intermediate: 'text-yellow-400',
+                                    Advanced: 'text-rose-400'
+                                };
+                                const borderColors = {
+                                    Beginner: 'border-emerald-500/50',
+                                    Intermediate: 'border-yellow-500/50',
+                                    Advanced: 'border-rose-500/50'
+                                };
+                                const bgColors = {
+                                    Beginner: 'bg-emerald-500/10',
+                                    Intermediate: 'bg-yellow-500/10',
+                                    Advanced: 'bg-rose-500/10'
+                                };
+                                const isActive = diff === d;
+                                return (
+                                    <button 
+                                        key={d} 
+                                        onClick={() => setDiff(d)}
+                                        className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border flex items-center justify-center gap-2 ${
+                                            isActive 
+                                            ? `${bgColors[d]} ${borderColors[d]} ${textColors[d]} ${shadowGlows[d]}` 
+                                            : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/10 hover:text-slate-400'
+                                        }`}
+                                    >
+                                        <span>{emojis[d]}</span>
+                                        <span>{d}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -486,6 +512,30 @@ const AssessmentHub = () => {
     const [questions, setQuestions] = useState([]);
     const [meta, setMeta] = useState({});
     const [answers, setAnswers] = useState([]);
+    const [stats, setStats] = useState({ completed_quizzes: 0, average_score: 0, streak: 0 });
+    
+    const { currentUser } = useAuth();
+    const userName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'User';
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await api.get('/assessment/stats');
+                if (res.data) {
+                    setStats({
+                        completed_quizzes: res.data.completed_quizzes || 0,
+                        average_score: res.data.average_score || 0,
+                        streak: res.data.streak || 0
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to fetch assessment stats:", err);
+            }
+        };
+        if (phase === 'setup' && currentUser) {
+            fetchStats();
+        }
+    }, [phase, currentUser]);
 
     const handleStart = (qs, cat, topic, diff, branch) => { 
         setQuestions(qs); 
@@ -493,9 +543,25 @@ const AssessmentHub = () => {
         setPhase('quiz'); 
     };
     
-    const handleFinish = (ans) => { 
+    const handleFinish = async (ans) => { 
         setAnswers(ans); 
         setPhase('result'); 
+
+        const correct = ans.filter(a => a.correct).length;
+        const pct = Math.round((correct / ans.length) * 100);
+
+        try {
+            await api.post('/assessment/save', {
+                category: meta.cat,
+                topic: meta.topic,
+                difficulty: meta.diff,
+                score: pct,
+                total_questions: ans.length,
+                correct_answers: correct
+            });
+        } catch (err) {
+            console.error("Failed to save assessment score:", err);
+        }
     };
     
     const handleRetry = () => { 
@@ -510,12 +576,47 @@ const AssessmentHub = () => {
             <div className="blob blob-2 opacity-20"></div>
 
             <div className="max-w-4xl mx-auto relative z-10">
-                <div className="text-center mb-16">
+                <div className="text-center mb-10">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/5 border border-purple-500/10 mb-6 group hover:border-purple-500/30 transition-all cursor-default">
                         <Layers className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform" />
                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-500">Skill Assessment</span>
                     </div>
                 </div>
+
+                {phase === 'setup' && currentUser && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-panel p-8 rounded-[2.5rem] border-white/5 shadow-xl bg-white/[0.02] max-w-2xl mx-auto mb-10 text-left"
+                    >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                            <div className="space-y-1">
+                                <h3 className="text-2xl font-black text-white flex items-center gap-2">
+                                    🔥 Welcome back, <span className="hero-gradient">{userName}</span>
+                                </h3>
+                                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Here is your daily quiz breakdown</p>
+                            </div>
+                            <div className="flex items-center gap-6 sm:gap-8">
+                                <div className="text-center">
+                                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Completed Quizzes</p>
+                                    <span className="text-2xl font-extrabold text-white tracking-tight">{stats.completed_quizzes}</span>
+                                </div>
+                                <div className="h-8 w-px bg-white/10" />
+                                <div className="text-center">
+                                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Average Score</p>
+                                    <span className="text-2xl font-extrabold text-cyan-400 tracking-tight">{stats.average_score}%</span>
+                                </div>
+                                <div className="h-8 w-px bg-white/10" />
+                                <div className="text-center">
+                                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Current Streak</p>
+                                    <span className="text-2xl font-extrabold text-purple-400 tracking-tight flex items-center justify-center gap-1">
+                                        {stats.streak} <span className="text-xs text-slate-500 font-bold uppercase">Days</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
                 
                 <AnimatePresence mode="wait">
                     {phase === 'setup' && <AssessmentSetup onStart={handleStart} key="setup" />}
