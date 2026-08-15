@@ -1,11 +1,11 @@
  # <p align="center">🤖 PlacementAI: Unified Interview & Mentor System</p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/repo-size/Sachin1817/Ai-Interview-System?style=for-the-badge&logo=github&color=30A9DE" alt="Repository Size" />
-  <img src="https://img.shields.io/github/languages/top/Sachin1817/Ai-Interview-System?style=for-the-badge&logo=javascript&color=E3C16F" alt="Top Language" />
-  <img src="https://img.shields.io/github/stars/Sachin1817/Ai-Interview-System?style=for-the-badge&logo=github&color=F6D55C" alt="GitHub Stars" />
-  <img src="https://img.shields.io/github/forks/Sachin1817/Ai-Interview-System?style=for-the-badge&logo=git&color=3CAEA3" alt="GitHub Forks" />
-  <img src="https://img.shields.io/github/license/Sachin1817/Ai-Interview-System?style=for-the-badge&logo=google-keep&color=ED553B" alt="License" />
+  <img src="https://img.shields.io/github/repo-size/Sachin1817/PlacementAI?style=for-the-badge&logo=github&color=30A9DE" alt="Repository Size" />
+  <img src="https://img.shields.io/github/languages/top/Sachin1817/PlacementAI?style=for-the-badge&logo=javascript&color=E3C16F" alt="Top Language" />
+  <img src="https://img.shields.io/github/stars/Sachin1817/PlacementAI?style=for-the-badge&logo=github&color=F6D55C" alt="GitHub Stars" />
+  <img src="https://img.shields.io/github/forks/Sachin1817/PlacementAI?style=for-the-badge&logo=git&color=3CAEA3" alt="GitHub Forks" />
+  <img src="https://img.shields.io/github/license/Sachin1817/PlacementAI?style=for-the-badge&logo=google-keep&color=ED553B" alt="License" />
 </p>
 
 <p align="center">
@@ -188,7 +188,7 @@ graph TD
 ## 📂 Directory Blueprint
 
 ```text
-📁 Ai-Interview-System/
+📁 PlacementAI/
 ├── 📁 frontend/                # React 19 Frontend Application
 │   ├── 📁 public/              # Static Assets & Configurations
 │   └── 📁 src/
@@ -223,8 +223,8 @@ Before starting, ensure you have the following installed on your machine:
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/Sachin1817/Ai-Interview-System.git
-cd Ai-Interview-System
+git clone https://github.com/Sachin1817/PlacementAI.git
+cd PlacementAI
 ```
 
 ---
