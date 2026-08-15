@@ -1,12 +1,12 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { 
     User, LogOut, ChevronDown, Settings, Mail, UserCircle, Menu, X, 
     Home, FileText, MessageSquare, ShieldCheck, Compass, BarChart3, Code2,
-    ChevronLeft, ChevronRight
+    ChevronLeft, ChevronRight, Briefcase
 } from 'lucide-react';
 
 // Components
@@ -21,6 +21,8 @@ import CareerAdvisor from './components/career/CareerAdvisor';
 import Analytics from './components/analytics/Analytics';
 import ResumeBuilder from './components/resume/ResumeBuilder';
 import CodingInterview from './components/interview/CodingInterview';
+import HRDashboard from './components/admin/HRDashboard';
+import JobOpenings from './components/career/JobOpenings';
 
 // New 3D Components
 import ThreeDCard from './components/layout/ThreeDCard';
@@ -33,6 +35,13 @@ import CareerChatbot from './components/career/CareerChatbot';
 // ─── Dashboard ───
 const Dashboard = () => {
     const { currentUser } = useAuth();
+    const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isHR = localUser?.role === 'hr';
+
+    if (isHR) {
+        return <Navigate to="/admin" replace />;
+    }
+
     const user = currentUser ? {
         name: currentUser.displayName || currentUser.email.split('@')[0],
         email: currentUser.email
@@ -235,10 +244,16 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const navLinks = [
+    const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isHR = localUser?.role === 'hr';
+
+    const navLinks = isHR ? [
+        { to: '/admin', label: 'HR Admin', icon: <ShieldCheck className="w-5 h-5" /> }
+    ] : [
         { to: '/', label: 'Home', icon: <Home className="w-5 h-5" /> },
         { to: '/resume-builder', label: 'Builder', icon: <FileText className="w-5 h-5" /> },
         { to: '/analyze', label: 'Analyzer', icon: <FileText className="w-5 h-5" /> },
+        { to: '/jobs', label: 'Jobs', icon: <Briefcase className="w-5 h-5" /> },
         { to: '/interview', label: 'Interview', icon: <MessageSquare className="w-5 h-5" /> },
         { to: '/coding-interview', label: 'Coding', icon: <Code2 className="w-5 h-5" /> },
         { to: '/assessment', label: 'Assess', icon: <ShieldCheck className="w-5 h-5" /> },
@@ -285,34 +300,61 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
             )}
 
             <div className="flex flex-col gap-2">
-                {navLinks.map((link) => (
-                    <Link 
-                        key={link.to} 
-                        to={link.to}
-                        className={`group flex items-center relative overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'p-2 justify-center' : 'px-6 py-4 gap-4'} rounded-2xl ${isActive(link.to) ? 'text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.05)]' : 'text-slate-400 hover:text-white'}`}
-                    >
-                        {/* Smooth active background indicator */}
-                        {isActive(link.to) && (
-                            <motion.div 
-                                layoutId="activeIndicator" 
-                                className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl"
-                                transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                            />
-                        )}
-
+                {navLinks.map((link) => {
+                    const linkClasses = `group flex items-center relative overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'p-2 justify-center' : 'px-6 py-4 gap-4'} rounded-2xl ${isActive(link.to) ? 'text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.05)]' : 'text-slate-400 hover:text-white'}`;
+                    const innerIcon = (
                         <div className={`${sidebarCollapsed ? 'p-1.5' : 'p-2'} rounded-xl transition-colors duration-300 relative z-10 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'}`}>
                             <motion.div whileHover={{ rotate: 10, scale: 1.1 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
                                 {link.icon}
                             </motion.div>
                         </div>
-                        
-                        {!sidebarCollapsed && (
-                            <span className="text-lg font-bold tracking-wide relative z-10">
-                                {link.label}
-                            </span>
-                        )}
-                    </Link>
-                ))}
+                    );
+                    const innerLabel = !sidebarCollapsed && (
+                        <span className="text-lg font-bold tracking-wide relative z-10">
+                            {link.label}
+                        </span>
+                    );
+
+                    if (link.to === '/admin') {
+                        return (
+                            <a 
+                                key={link.to} 
+                                href={link.to}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={linkClasses}
+                            >
+                                {isActive(link.to) && (
+                                    <motion.div 
+                                        layoutId="activeIndicator" 
+                                        className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl"
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                    />
+                                )}
+                                {innerIcon}
+                                {innerLabel}
+                            </a>
+                        );
+                    }
+
+                    return (
+                        <Link 
+                            key={link.to} 
+                            to={link.to}
+                            className={linkClasses}
+                        >
+                            {isActive(link.to) && (
+                                <motion.div 
+                                    layoutId="activeIndicator" 
+                                    className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl"
+                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                />
+                            )}
+                            {innerIcon}
+                            {innerLabel}
+                        </Link>
+                    );
+                })}
             </div>
 
             <div className="mt-auto pt-8 border-t border-white/5">
@@ -453,24 +495,52 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        {navLinks.map((link, idx) => (
-                            <Link 
-                                key={link.to} 
-                                to={link.to}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className={`group flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden ${isActive(link.to) ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.1)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
+                        {navLinks.map((link, idx) => {
+                            const linkClasses = `group flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden ${isActive(link.to) ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.1)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`;
+                            const innerIcon = (
                                 <div className={`p-2 rounded-xl transition-colors duration-300 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'}`}>
                                     {link.icon}
                                 </div>
+                            );
+                            const innerLabel = (
                                 <span className="text-lg font-bold tracking-wide">
                                     {link.label}
                                 </span>
-                                {isActive(link.to) && (
-                                    <motion.div layoutId="activeNav" className="absolute left-0 w-1 y-full bg-cyan-400 rounded-r-full" style={{ height: '60%', top: '20%' }} />
-                                )}
-                            </Link>
-                        ))}
+                            );
+                            const activeIndicator = isActive(link.to) && (
+                                <motion.div layoutId="activeNav" className="absolute left-0 w-1 y-full bg-cyan-400 rounded-r-full" style={{ height: '60%', top: '20%' }} />
+                            );
+
+                            if (link.to === '/admin') {
+                                return (
+                                    <a 
+                                        key={link.to} 
+                                        href={link.to}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className={linkClasses}
+                                    >
+                                        {innerIcon}
+                                        {innerLabel}
+                                        {activeIndicator}
+                                    </a>
+                                );
+                            }
+
+                            return (
+                                <Link 
+                                    key={link.to} 
+                                    to={link.to}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={linkClasses}
+                                >
+                                    {innerIcon}
+                                    {innerLabel}
+                                    {activeIndicator}
+                                </Link>
+                            );
+                        })}
                     </div>
 
                     <div className="mt-auto pt-8 border-t border-white/5">
@@ -488,6 +558,19 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
         </AnimatePresence>
         </>
     );
+};
+
+// Role-based Route Wrappers for Strict Separation
+const HRRoute = ({ children }) => {
+    const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isHR = localUser?.role === 'hr';
+    return isHR ? children : <Navigate to="/" replace />;
+};
+
+const CandidateRoute = ({ children }) => {
+    const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isHR = localUser?.role === 'hr';
+    return !isHR ? children : <Navigate to="/admin" replace />;
 };
 
 // ─── App ───
@@ -516,13 +599,15 @@ function App() {
                                     <Route path="/forgot-password" element={<ForgotPassword />} />
                                     
                                     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                                    <Route path="/analyze" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
-                                    <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
-                                    <Route path="/coding-interview" element={<ProtectedRoute><CodingInterview /></ProtectedRoute>} />
-                                    <Route path="/assessment" element={<ProtectedRoute><AssessmentHub /></ProtectedRoute>} />
-                                    <Route path="/career" element={<ProtectedRoute><CareerAdvisor /></ProtectedRoute>} />
-                                    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                                    <Route path="/resume-builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+                                    <Route path="/analyze" element={<CandidateRoute><ProtectedRoute><ResumeUpload /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/jobs" element={<CandidateRoute><ProtectedRoute><JobOpenings /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/interview" element={<CandidateRoute><ProtectedRoute><AIInterview /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/coding-interview" element={<CandidateRoute><ProtectedRoute><CodingInterview /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/assessment" element={<CandidateRoute><ProtectedRoute><AssessmentHub /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/career" element={<CandidateRoute><ProtectedRoute><CareerAdvisor /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/analytics" element={<CandidateRoute><ProtectedRoute><Analytics /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/resume-builder" element={<CandidateRoute><ProtectedRoute><ResumeBuilder /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/admin" element={<HRRoute><ProtectedRoute><HRDashboard /></ProtectedRoute></HRRoute>} />
                                 </Routes>
                             </AnimatePresence>
                         </div>

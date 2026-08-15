@@ -46,6 +46,7 @@ def submit_test(user_id):
     output = data.get('output', "")
     execution_time = data.get('execution_time', 0.0)
     memory = data.get('memory', "8 MB")
+    session_id = data.get('session_id')
     
     # AI Evaluation
     evaluation = CodingService.evaluate_with_ai(role, language, code, output)
@@ -64,9 +65,38 @@ def submit_test(user_id):
         "date": datetime.datetime.utcnow()
     }
     
+    # Link to session if it exists
+    if session_id:
+        submission["session_id"] = session_id
+        interviews_col = db['interviews']
+        try:
+            interviews_col.update_one(
+                {"_id": ObjectId(session_id)},
+                {"$set": {
+                    "status": "completed",
+                    "result": {
+                        "score": evaluation.get('overall_score', 0),
+                        "overall_score": evaluation.get('overall_score', 0),
+                        "pass_fail": evaluation.get('pass_fail', 'FAIL'),
+                        "feedback": evaluation
+                    },
+                    "code_submission": {
+                        "code": code,
+                        "language": language,
+                        "output": output,
+                        "execution_time": execution_time,
+                        "memory": memory,
+                        "score": evaluation.get('overall_score', 0),
+                        "feedback": evaluation,
+                        "submitted_at": datetime.datetime.utcnow()
+                    }
+                }}
+            )
+        except Exception as e:
+            print(f"Error updating interview session from coding submit: {e}")
+    
     res = submissions_col.insert_one(submission)
     submission['_id'] = str(res.inserted_id)
-    # Convert dates for JSON
     submission['date'] = submission['date'].isoformat()
     
     return jsonify({

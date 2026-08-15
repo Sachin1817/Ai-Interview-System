@@ -12,6 +12,7 @@ from routes.interview import interview_bp
 from routes.career import career_bp
 from routes.assessment import assessment_bp
 from routes.coding import coding_bp
+from routes.admin import admin_bp
 from flask_apscheduler import APScheduler
 import datetime
 
@@ -25,6 +26,7 @@ app.register_blueprint(interview_bp, url_prefix='/api/interview')
 app.register_blueprint(career_bp, url_prefix='/api/career')
 app.register_blueprint(assessment_bp, url_prefix='/api/assessment')
 app.register_blueprint(coding_bp, url_prefix='/api/coding')
+app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
 # ─── Scheduler ───
 scheduler = APScheduler()
@@ -68,7 +70,7 @@ def health_check():
     serp_key = os.environ.get('SERP_API_KEY')
     return jsonify({
         "status": "healthy", 
-        "message": "AI Placement API is running!",
+        "message": "PlacementAI API is running!",
         "api_keys_health": {
             "GROQ_API_KEY": "configured" if groq_key else "missing",
             "SERP_API_KEY": "configured" if serp_key else "missing"

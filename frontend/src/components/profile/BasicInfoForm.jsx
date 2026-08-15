@@ -160,6 +160,22 @@ const BasicInfoForm = ({ formData, setFormData, errors }) => {
         {errors.graduationYear && <p className="text-[10px] text-red-400 font-semibold">{errors.graduationYear}</p>}
       </div>
 
+      {/* Academic CGPA / % */}
+      <div className="space-y-2">
+        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <GraduationCap size={14} className="text-cyan-500" /> Academic CGPA / %
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          name="cgpa"
+          value={formData.cgpa || ''}
+          onChange={handleChange}
+          placeholder="e.g. 8.50 or 85"
+          className="premium-input"
+        />
+      </div>
+
       {/* Branch */}
       <div className="space-y-2">
         <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">

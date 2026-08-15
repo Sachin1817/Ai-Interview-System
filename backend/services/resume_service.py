@@ -91,6 +91,7 @@ def analyze_resume(text):
         - job_roles: (List of strings) Top 3-5 job titles the user is currently qualified for.
         - roadmap: (List of strings) A 5-step actionable plan to improve the profile for senior-level roles.
         - location: (String) Extract the user's current city and state/location if present (e.g. "Mumbai, Maharashtra", "Bengaluru", "New Delhi"). If no location is mentioned, return "India".
+        - cgpa: (Float or Float string or null) Extract the graduation/academic CGPA or percentage if mentioned (e.g. 8.50, 9.2, 85%, 72%). If it's a percentage, convert it to a 0-100 float scale (e.g. 85.0). If it's a CGPA on a 10-point scale, leave it as is (e.g. 8.5). If not found, return null.
         
         Your response must be ONLY the JSON object. No conversational text.
         """

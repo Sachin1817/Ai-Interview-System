@@ -22,7 +22,8 @@ const ProfilePage = () => {
     college: '',
     graduationYear: '',
     targetRole: '',
-    profileImage: ''
+    profileImage: '',
+    cgpa: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [errors, setErrors] = useState({});

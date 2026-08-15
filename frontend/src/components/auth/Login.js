@@ -44,11 +44,11 @@ const Login = () => {
             const userCredential = await login(data.email, data.password);
             
             // Check if email is verified
-            if (!userCredential.user.emailVerified) {
-                setError('Please verify your email before logging in. Check your inbox.');
-                setLoading(false);
-                return;
-            }
+            // if (!userCredential.user.emailVerified) {
+            //     setError('Please verify your email before logging in. Check your inbox.');
+            //     setLoading(false);
+            //     return;
+            // }
 
             // Sync with backend to get a valid backend JWT
             try {

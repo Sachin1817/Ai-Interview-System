@@ -1,4 +1,4 @@
- # <p align="center">🤖 AI Career Pro: Unified Interview & Mentor System</p>
+ # <p align="center">🤖 PlacementAI: Unified Interview & Mentor System</p>
 
 <p align="center">
   <img src="https://img.shields.io/github/repo-size/Sachin1817/Ai-Interview-System?style=for-the-badge&logo=github&color=30A9DE" alt="Repository Size" />
@@ -83,6 +83,19 @@
 * **Radar Pulse Loading Animation**: A futuristic rotating target/radar loading display showing pulsing concentric rings and live-scrolling CLI connection logs during profile alignment calculations.
 * **Staggered Entry Transitions**: Premium spring-loaded slide-up stagger transitions across results segments (Summary, Matching Roles, Roadmaps, Resources, and Real-Time Opportunities) for polished entrance effects.
 * **Global Configuration State**: Stores goals, preferences, and interview feedback, allowing both the AI Mentor and mock interviewers to adapt to your growth.
+
+### 7. Production-Grade HR Admin Dashboard
+* **Widescreen Fluid Layouts**: Optimized grid alignment utilizing wide containers (`max-w-[96%]`) for clear visual spacing on modern displays.
+* **Dynamic Time Greetings**: Greeting banners that adapt dynamically to local system time (Good morning / afternoon / evening) combined with name strings.
+* **Smart Directory Sorting**: Dynamic open jobs list sorting that positions active openings at the top and pushes closed vacancies to the bottom.
+* **Interactive Frontend App Previews**: Sandboxed `<iframe>` layout panels that render the candidate's actual HTML/CSS/JS frontend code live on the dashboard, enabling HR to click, type, and test outputs interactively.
+* **Console Code Execution logs**: Renders actual stdout/stderr execution outputs directly next to candidate code scripts.
+* **Structured AI Feedback Cards**: Formats raw AI code feedback objects into beautifully structured metrics showing subscores (Syntax, Logic, Performance, Quality) alongside strengths, weaknesses, and optimization suggestions.
+
+### 8. SMTP Candidate Notification Engine
+* **Automated Dispatch**: Instantly triggers email updates when HR changes a candidate's application status (shortlisted, scheduled for interview, selected, or rejected).
+* **Responsive HTML Templates**: Styled with custom CSS headers, position specifics, and stage-tailored action messages.
+* **Development Fallback Mode**: If SMTP host configurations are absent from `.env`, it defaults to logging message contents to `logs/email_dispatches.log` to support testing without email delivery failures.
 
 ---
 
@@ -271,7 +284,7 @@ Ensure Tailwind and standard React packages compile cleanly.
 
 ## 🏃 Running the System
 
-To fully experience **AI Career Pro**, start the services concurrently. Open three separate terminal screens and fire the commands:
+To fully experience **PlacementAI**, start the services concurrently. Open three separate terminal screens and fire the commands:
 
 ### Terminal 1: Python AI Core Server
 ```bash

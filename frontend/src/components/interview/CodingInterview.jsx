@@ -25,6 +25,10 @@ const CodingInterview = () => {
     const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState('description');
     const [saveStatus, setSaveStatus] = useState('Saved.');
+    
+    // Assigned manual challenges state
+    const [assignedChallenges, setAssignedChallenges] = useState([]);
+    const [currentSessionId, setCurrentSessionId] = useState(null);
 
     const roles = [
         "Frontend Developer", "Backend Developer", "Full Stack Developer",
@@ -49,6 +53,8 @@ const CodingInterview = () => {
         }
     }, [step, timeLeft]);
 
+    // Fetch assigned coding challenges moved below startAssignedChallenge function
+
     // Autosave logic
     useEffect(() => {
         if (step !== 'interview' || !code) return;
@@ -72,6 +78,7 @@ const CodingInterview = () => {
 
     const startInterview = async (role) => {
         setSelectedRole(role);
+        setCurrentSessionId(null);
         try {
             const res = await api.post('/coding/generate', { role, difficulty });
             setChallenge(res.data.challenge);
@@ -89,16 +96,58 @@ const CodingInterview = () => {
         }
     };
 
+    const startAssignedChallenge = (assignedSession) => {
+        setCurrentSessionId(assignedSession._id);
+        setSelectedRole(assignedSession.role);
+        setChallenge(assignedSession.coding_challenge);
+        setLanguage(assignedSession.coding_challenge.language || 'python');
+        setCode(assignedSession.coding_challenge.boilerplate || getDefaultCode(assignedSession.coding_challenge.language || 'python'));
+        setStep('interview');
+    };
+
     const getDefaultCode = (lang) => {
         const templates = {
             python: "# Write your Python code here\ndef solution():\n    print('Hello World')\n\nsolution()",
             javascript: "// Write your JavaScript code here\nconsole.log('Hello World');",
+            typescript: "// Write your TypeScript code here\nconst greeting: string = 'Hello World';\nconsole.log(greeting);",
             java: "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello World\");\n    }\n}",
+            cpp: "#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << \"Hello World\" << endl;\n    return 0;\n}",
+            c: "#include <stdio.h>\n\nint main() {\n    printf(\"Hello World\\n\");\n    return 0;\n}",
+            csharp: "using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine(\"Hello World\");\n    }\n}",
+            go: "package main\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"Hello World\")\n}",
+            rust: "fn main() {\n    println!(\"Hello World\");\n}",
+            ruby: "# Write your Ruby code here\nputs 'Hello World'",
+            php: "<?php\n// Write your PHP code here\necho 'Hello World';\n?>",
             bash: "#!/bin/bash\necho 'Hello World'",
-            html: "<!-- Write your HTML/CSS/JS here -->\n<div id='root'>\n  <h1>Hello World</h1>\n</div>"
+            html: "<!-- Write your HTML/CSS/JS here -->\n<div id='root'>\n  <h1>Hello World</h1>\n</div>",
+            css: "/* Write your CSS styles here */\nbody {\n    background-color: #060b16;\n    color: #f8fafc;\n}"
         };
         return templates[lang] || "";
     };
+
+    // Fetch assigned coding challenges with auto-launch capability
+    useEffect(() => {
+        const fetchAssigned = async () => {
+            try {
+                const res = await api.get('/interview/assigned');
+                const codingChallenges = res.data.filter(inv => inv.interview_type === 'coding');
+                setAssignedChallenges(codingChallenges);
+
+                // Auto launch check from JobOpenings workspace
+                const autoLaunch = localStorage.getItem('auto_launch_assigned');
+                if (autoLaunch) {
+                    const parsed = JSON.parse(autoLaunch);
+                    if (parsed.interview_type === 'coding') {
+                        localStorage.removeItem('auto_launch_assigned');
+                        startAssignedChallenge(parsed);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching assigned coding challenges:", err);
+            }
+        };
+        fetchAssigned();
+    }, [step]);
 
     const parseInstructions = (instructionsText) => {
         if (!instructionsText) return { description: '', examples: '', constraints: '', hints: '' };
@@ -180,6 +229,7 @@ const CodingInterview = () => {
         setIsSubmitting(true);
         try {
             const res = await api.post('/coding/submit', {
+                session_id: currentSessionId,
                 role: selectedRole,
                 language,
                 code,
@@ -223,6 +273,33 @@ const CodingInterview = () => {
                                         AI-generated algorithms tailored for your specific role and skills.
                                     </p>
                                 </header>
+
+                                {/* Assigned Coding Challenges */}
+                                {assignedChallenges.length > 0 && (
+                                    <div className="glass-panel p-8 rounded-3xl border border-purple-500/20 mb-10 text-left bg-purple-500/5 max-w-2xl mx-auto">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-sm font-black text-purple-400 uppercase tracking-wider flex items-center gap-2">
+                                                <Zap className="w-5 h-5" /> Assigned Coding Challenges
+                                            </h3>
+                                            <span className="text-[9px] font-black uppercase bg-purple-500 text-white px-2 py-0.5 rounded-full">ACTION REQUIRED</span>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {assignedChallenges.map(inv => (
+                                                <div key={inv._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-purple-500/30 transition-all">
+                                                    <div>
+                                                        <div className="font-bold text-sm text-white">{inv.coding_challenge?.title || 'Coding Challenge'}</div>
+                                                        <div className="text-xs text-slate-400 mt-1">Language: <span className="text-purple-400 font-bold uppercase">{inv.coding_challenge?.language || 'python'}</span> | Difficulty: <span className="text-white">{inv.difficulty}</span></div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => startAssignedChallenge(inv)}
+                                                        className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-purple-500 text-white hover:bg-purple-400 shadow-glow-primary active:scale-95 transition-all">
+                                                        Start Challenge
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Difficulty Selector */}
                                 <div className="flex justify-center gap-4 mb-14">
@@ -314,11 +391,30 @@ const CodingInterview = () => {
                                     <div className="flex items-center gap-4">
                                         <select
                                             value={language}
-                                            onChange={(e) => setLanguage(e.target.value)}
+                                            onChange={(e) => {
+                                                const newLang = e.target.value;
+                                                setLanguage(newLang);
+                                                setCode(getDefaultCode(newLang));
+                                            }}
                                             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-xs font-black uppercase tracking-widest rounded-xl px-4 py-3 focus:border-cyan-500 outline-none transition-all shadow-sm"
                                         >
-                                            {languageOptions[selectedRole]?.map(lang => (
-                                                <option key={lang} value={lang}>{lang.toUpperCase()}</option>
+                                            {[
+                                                { value: 'python', label: 'Python' },
+                                                { value: 'javascript', label: 'JavaScript' },
+                                                { value: 'typescript', label: 'TypeScript' },
+                                                { value: 'java', label: 'Java' },
+                                                { value: 'cpp', label: 'C++' },
+                                                { value: 'c', label: 'C' },
+                                                { value: 'csharp', label: 'C#' },
+                                                { value: 'go', label: 'Go' },
+                                                { value: 'rust', label: 'Rust' },
+                                                { value: 'ruby', label: 'Ruby' },
+                                                { value: 'php', label: 'PHP' },
+                                                { value: 'bash', label: 'Bash' },
+                                                { value: 'html', label: 'HTML' },
+                                                { value: 'css', label: 'CSS' }
+                                            ].map(lang => (
+                                                <option key={lang.value} value={lang.value}>{lang.label}</option>
                                             ))}
                                         </select>
 

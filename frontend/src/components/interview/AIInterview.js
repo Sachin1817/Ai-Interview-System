@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Clock, ChevronRight, Send, Trophy, Target, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mic, MicOff, Clock, ChevronRight, Send, Trophy, Target, TrendingUp, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import api from '../../services/api';
 import AILoadingOverlay from '../layout/AILoadingOverlay';
 
@@ -547,9 +547,43 @@ const AIInterview = () => {
     const [session, setSession] = useState(null);
     const [result, setResult] = useState(null);
     const [answers, setAnswers] = useState([]);
+    const [assignedInterviews, setAssignedInterviews] = useState([]);
+
+    useEffect(() => {
+        const fetchAssigned = async () => {
+            try {
+                const res = await api.get('/interview/assigned');
+                // Filter only standard type interviews
+                const standardInterviews = res.data.filter(inv => inv.interview_type === 'standard');
+                setAssignedInterviews(standardInterviews);
+
+                // Auto launch check
+                const autoLaunch = localStorage.getItem('auto_launch_assigned');
+                if (autoLaunch) {
+                    const parsed = JSON.parse(autoLaunch);
+                    if (parsed.interview_type === 'standard') {
+                        localStorage.removeItem('auto_launch_assigned');
+                        handleStartAssigned(parsed._id);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching assigned interviews:", err);
+            }
+        };
+        fetchAssigned();
+    }, []);
 
     const handleStart = (sessionData) => setSession(sessionData);
     const handleFinish = (resultData, allAnswers) => { setResult(resultData); setAnswers(allAnswers); };
+
+    const handleStartAssigned = async (sessionId) => {
+        try {
+            const res = await api.post('/interview/start-assigned', { session_id: sessionId });
+            setSession(res.data);
+        } catch (err) {
+            alert("Failed to start assigned interview. Please try again.");
+        }
+    };
 
     return (
         <div className="min-h-screen pt-36 md:pt-40 pb-20 px-6 relative overflow-visible">
@@ -575,6 +609,33 @@ const AIInterview = () => {
                             Experience the industry's most advanced behavioral and technical evaluation engine. Fully adaptive, real-time feedback.
                         </p>
                     </header>
+                )}
+
+                {/* Assigned Q&A Interviews */}
+                {!session && !result && assignedInterviews.length > 0 && (
+                    <div className="glass-panel p-8 rounded-3xl border border-cyan-500/20 mb-8 max-w-4xl mx-auto bg-cyan-500/5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-black text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                                <Sparkles className="w-5 h-5" /> Assigned HR Interviews
+                            </h3>
+                            <span className="text-[9px] font-black uppercase bg-cyan-500 text-slate-950 px-2 py-0.5 rounded-full">ACTION REQUIRED</span>
+                        </div>
+                        <div className="space-y-3">
+                            {assignedInterviews.map(inv => (
+                                <div key={inv._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-all">
+                                    <div>
+                                        <div className="font-bold text-sm text-white">Manual Hybrid Q&A Session</div>
+                                        <div className="text-xs text-slate-400 mt-1">Role: <span className="text-cyan-400 font-bold">{inv.role}</span> | Difficulty: <span className="text-white">{inv.difficulty}</span> | Questions: <span className="text-white font-bold">{inv.manual_questions?.length || 0}</span></div>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleStartAssigned(inv._id)}
+                                        className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-cyan-500 text-slate-950 hover:bg-cyan-400 shadow-glow-cyan active:scale-95 transition-all">
+                                        Start Interview
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )}
 
                 {!session && !result && <SetupScreen onStart={handleStart} />}

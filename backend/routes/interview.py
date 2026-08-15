@@ -110,3 +110,41 @@ def get_history(user_id):
     for h in history:
         h['_id'] = str(h['_id'])
     return jsonify(history), 200
+
+@interview_bp.route('/assigned', methods=['GET'])
+@token_required
+def get_assigned_interviews(user_id):
+    assigned = list(interviews_col.find({"user_id": user_id, "is_manual_mode": True, "status": "assigned"}))
+    for x in assigned:
+        x['_id'] = str(x['_id'])
+        if 'created_at' in x and isinstance(x['created_at'], datetime.datetime):
+            x['created_at'] = x['created_at'].isoformat()
+    return jsonify(assigned), 200
+
+@interview_bp.route('/start-assigned', methods=['POST'])
+@token_required
+def start_assigned_interview(user_id):
+    data = request.get_json()
+    session_id = data.get('session_id')
+    if not session_id:
+        return jsonify({"message": "Missing session_id"}), 400
+        
+    session = interviews_col.find_one({"_id": ObjectId(session_id), "user_id": user_id})
+    if not session:
+        return jsonify({"message": "Assigned interview not found"}), 404
+        
+    interviews_col.update_one(
+        {"_id": ObjectId(session_id)},
+        {"$set": {"status": "active", "started_at": datetime.datetime.utcnow()}}
+    )
+    
+    return jsonify({
+        "session_id": str(session["_id"]),
+        "questions": session.get("questions", []),
+        "branch": session.get("branch", "CSE"),
+        "difficulty": session.get("difficulty", "Intermediate"),
+        "role": session.get("role", "Software Engineer"),
+        "is_manual_mode": True,
+        "interview_type": session.get("interview_type", "standard"),
+        "coding_challenge": session.get("coding_challenge", None)
+    }), 200
