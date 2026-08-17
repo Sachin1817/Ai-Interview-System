@@ -88,7 +88,7 @@ def login():
     password = data.get('password')
 
     user = users_col.find_one({"email": email})
-    if user and verify_password(user['password'], password):
+    if user and 'password' in user and verify_password(user['password'], password):
         user_role = user.get('role', 'candidate')
         if email.lower() == 'sachindevaraju49@gmail.com' and user_role != 'hr':
             users_col.update_one({"_id": user["_id"]}, {"$set": {"role": "hr"}})
@@ -112,6 +112,8 @@ from utils.auth_helper import token_required
 @token_required
 def update_profile(user_id):
     """Sync profile updates (e.g., branch) from frontend to MongoDB."""
+    if user_id == "guest_user":
+        return jsonify({"message": "Unauthorized: login required"}), 401
     data = request.get_json()
     update_data = {}
     
@@ -142,9 +144,18 @@ def update_profile(user_id):
 @token_required
 def get_profile(user_id):
     """Retrieve user profile details including CGPA from MongoDB."""
-    user = users_col.find_one({"_id": ObjectId(user_id)})
+    if user_id == "guest_user":
+        return jsonify({"message": "Unauthorized: login required"}), 401
+    
+    user = None
+    try:
+        user = users_col.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        pass
+        
     if not user:
         user = users_col.find_one({"_id": user_id})
+        
     if not user:
         return jsonify({"message": "User not found"}), 404
         

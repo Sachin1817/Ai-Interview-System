@@ -1,0 +1,167 @@
+mutation InsertUser @auth(level: USER) {
+  user_insert(data: {
+    id_expr: "auth.uid",
+    email: "user@example.com",
+    displayName: "New User",
+    targetRole: "Developer"
+  })
+}
+
+mutation UpdateUser @auth(level: USER) {
+  user_update(key: {id_expr: "auth.uid"}, data: {displayName: "Updated Name"})
+}
+
+mutation DeleteUser @auth(level: USER) {
+  user_delete(key: {id_expr: "auth.uid"})
+}
+
+query GetCurrentUser @auth(level: USER) {
+  user(key: {id_expr: "auth.uid"}) {
+    email
+    displayName
+    targetRole
+  }
+}
+
+query ListUsers @auth(level: PUBLIC, insecureReason: "Public list of profiles") {
+  users {
+    displayName
+    targetRole
+  }
+}
+
+mutation CreateInterviewSession @auth(level: USER) {
+  interviewSession_insert(data: {
+    userId_expr: "auth.uid",
+    jobRole: "Software Engineer",
+    interviewType: "Technical",
+    status: "Pending",
+    createdAt_expr: "request.time"
+  })
+}
+
+mutation UpdateInterviewSession @auth(level: USER) {
+  interviewSession_update(
+    key: {id: "00000000-0000-0000-0000-000000000000"},
+    data: {status: "Completed", completionTimestamp_expr: "request.time"}
+  )
+}
+
+mutation DeleteInterviewSession @auth(level: USER) {
+  interviewSession_delete(key: {id: "00000000-0000-0000-0000-000000000000"})
+}
+
+query GetInterviewSession @auth(level: USER) {
+  interviewSession(id: "00000000-0000-0000-0000-000000000000") {
+    jobRole
+    status
+    totalScore
+  }
+}
+
+query ListMyInterviewSessions @auth(level: USER) {
+  interviewSessions(where: {userId: {eq_expr: "auth.uid"}}) {
+    id
+    jobRole
+    createdAt
+  }
+}
+
+mutation CreateQuestion @auth(level: USER) {
+  question_insert(data: {
+    interviewSessionId: "00000000-0000-0000-0000-000000000000",
+    content: "Explain recursion.",
+    sequenceNumber: 1
+  })
+}
+
+mutation UpdateQuestion @auth(level: USER) {
+  question_update(
+    key: {id: "00000000-0000-0000-0000-000000000000"},
+    data: {difficultyLevel: "Hard"}
+  )
+}
+
+mutation DeleteQuestion @auth(level: USER) {
+  question_delete(key: {id: "00000000-0000-0000-0000-000000000000"})
+}
+
+query GetQuestion @auth(level: USER) {
+  question(id: "00000000-0000-0000-0000-000000000000") {
+    content
+    sequenceNumber
+  }
+}
+
+query ListQuestions @auth(level: USER) {
+  questions(where: {interviewSessionId: {eq: "00000000-0000-0000-0000-000000000000"}}) {
+    content
+    sequenceNumber
+  }
+}
+
+mutation CreateResponse @auth(level: USER) {
+  response_insert(data: {
+    questionId: "00000000-0000-0000-0000-000000000000",
+    content: "Recursion is a function calling itself.",
+    score: 9.5
+  })
+}
+
+mutation UpdateResponse @auth(level: USER) {
+  response_update(
+    key: {id: "00000000-0000-0000-0000-000000000000"},
+    data: {feedback: "Great explanation."}
+  )
+}
+
+mutation DeleteResponse @auth(level: USER) {
+  response_delete(key: {id: "00000000-0000-0000-0000-000000000000"})
+}
+
+query GetResponse @auth(level: USER) {
+  response(id: "00000000-0000-0000-0000-000000000000") {
+    content
+    score
+  }
+}
+
+query ListResponses @auth(level: USER) {
+  responses(where: {questionId: {eq: "00000000-0000-0000-0000-000000000000"}}) {
+    content
+    score
+  }
+}
+
+mutation CreateSkillMetric @auth(level: USER) {
+  skillMetric_insert(data: {
+    userId_expr: "auth.uid",
+    skillName: "Java",
+    proficiencyScore: 8.0
+  })
+}
+
+mutation UpdateSkillMetric @auth(level: USER) {
+  skillMetric_update(
+    key: {id: "00000000-0000-0000-0000-000000000000"},
+    data: {proficiencyScore: 8.5}
+  )
+}
+
+mutation DeleteSkillMetric @auth(level: USER) {
+  skillMetric_delete(key: {id: "00000000-0000-0000-0000-000000000000"})
+}
+
+query GetSkillMetric @auth(level: USER) {
+  skillMetric(id: "00000000-0000-0000-0000-000000000000") {
+    skillName
+    proficiencyScore
+  }
+}
+
+query ListMySkills @auth(level: USER) {
+  skillMetrics(where: {userId: {eq_expr: "auth.uid"}}) {
+    skillName
+    proficiencyScore
+  }
+}

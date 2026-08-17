@@ -48,6 +48,7 @@ const Register = () => {
                     name: data.name,
                     email: data.email,
                     branch: data.branch,
+                    password: data.password,
                     firebaseUid: userCredential.user.uid
                 });
             } catch (backendErr) {

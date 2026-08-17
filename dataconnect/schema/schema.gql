@@ -1,0 +1,40 @@
+type User @table {
+  email: String!
+  displayName: String!
+  targetRole: String!
+  bio: String
+  resumeLink: String
+  skills: String
+}
+
+type InterviewSession @table {
+  user: User!
+  jobRole: String!
+  interviewType: String!
+  status: String!
+  createdAt: Timestamp!
+  totalScore: Float
+  completionTimestamp: Timestamp
+}
+
+type Question @table {
+  interviewSession: InterviewSession!
+  content: String!
+  sequenceNumber: Int!
+  difficultyLevel: String
+}
+
+type Response @table {
+  question: Question!
+  content: String!
+  score: Float!
+  feedback: String
+  audioUrl: String
+}
+
+type SkillMetric @table {
+  user: User!
+  skillName: String!
+  proficiencyScore: Float!
+  improvementNotes: String
+}

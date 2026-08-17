@@ -1,0 +1,21 @@
+mutation SeedDatabase @transaction {
+  u1: user_insert(data: {email: "alice@example.com", displayName: "Alice", targetRole: "Engineer"})
+  u2: user_insert(data: {email: "bob@example.com", displayName: "Bob", targetRole: "Designer"})
+  u3: user_insert(data: {email: "charlie@example.com", displayName: "Charlie", targetRole: "Manager"})
+
+  is1: interviewSession_insert(data: {user: {id_expr: "response.u1.id"}, jobRole: "Frontend Dev", interviewType: "Technical", status: "Completed", createdAt: "2023-10-01T10:00:00Z"})
+  is2: interviewSession_insert(data: {user: {id_expr: "response.u2.id"}, jobRole: "UI Designer", interviewType: "Portfolio", status: "Scheduled", createdAt: "2023-10-02T11:00:00Z"})
+  is3: interviewSession_insert(data: {user: {id_expr: "response.u3.id"}, jobRole: "Project Lead", interviewType: "Behavioral", status: "Pending", createdAt: "2023-10-03T09:00:00Z"})
+
+  q1: question_insert(data: {interviewSession: {id_expr: "response.is1.id"}, content: "Explain React hooks.", sequenceNumber: 1, difficultyLevel: "Hard"})
+  q2: question_insert(data: {interviewSession: {id_expr: "response.is1.id"}, content: "What is CSS Grid?", sequenceNumber: 2, difficultyLevel: "Medium"})
+  q3: question_insert(data: {interviewSession: {id_expr: "response.is2.id"}, content: "How do you approach layout?", sequenceNumber: 1, difficultyLevel: "Medium"})
+
+  r1: response_insert(data: {question: {id_expr: "response.q1.id"}, content: "They allow state in functional components.", score: 8.5})
+  r2: response_insert(data: {question: {id_expr: "response.q2.id"}, content: "A 2D layout system.", score: 9.0})
+  r3: response_insert(data: {question: {id_expr: "response.q3.id"}, content: "Focus on user flow.", score: 7.5})
+
+  sm1: skillMetric_insert(data: {user: {id_expr: "response.u1.id"}, skillName: "JavaScript", proficiencyScore: 9.0, improvementNotes: "Strong core"})
+  sm2: skillMetric_insert(data: {user: {id_expr: "response.u2.id"}, skillName: "Figma", proficiencyScore: 8.5, improvementNotes: "Good mastery"})
+  sm3: skillMetric_insert(data: {user: {id_expr: "response.u3.id"}, skillName: "Leadership", proficiencyScore: 9.5, improvementNotes: "Excellent"})
+}
