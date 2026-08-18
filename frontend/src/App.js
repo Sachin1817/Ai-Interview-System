@@ -6,7 +6,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { 
     User, LogOut, ChevronDown, Settings, Mail, UserCircle, Menu, X, 
     Home, FileText, MessageSquare, ShieldCheck, Compass, BarChart3, Code2,
-    ChevronLeft, ChevronRight, Briefcase
+    ChevronLeft, ChevronRight, Briefcase, Sparkles, Trophy, Users
 } from 'lucide-react';
 
 // Components
@@ -23,11 +23,15 @@ import ResumeBuilder from './components/resume/ResumeBuilder';
 import CodingInterview from './components/interview/CodingInterview';
 import HRDashboard from './components/admin/HRDashboard';
 import JobOpenings from './components/career/JobOpenings';
+import AIInterviewContainer from './components/ai-interview/AIInterviewContainer';
+import Leaderboard from './components/career/Leaderboard';
+import GDSimulator from './components/gd/GDSimulator';
 
 // New 3D Components
 import ThreeDCard from './components/layout/ThreeDCard';
 import FloatingBackground from './components/layout/FloatingBackground';
 import ThemeToggle from './components/layout/ThemeToggle';
+import NotificationBell from './components/layout/NotificationBell';
 
 import ProfilePage from './pages/ProfilePage';
 import CareerChatbot from './components/career/CareerChatbot';
@@ -54,23 +58,28 @@ const Dashboard = () => {
                 { title: 'ATS Resume Builder', desc: '8-step professional wizard with real-time AI optimization.', color: 'blue', href: '/resume-builder', icon: '🚀', badge: 'New Module' },
                 { title: 'Resume Analyzer', desc: 'Upload PDF → AI detects skill gaps and builds your roadmap.', color: 'cyan', href: '/analyze', icon: '📄', badge: 'AI-Powered' },
                 { title: 'Career Advisor', desc: 'Role match analysis, internship targets, certifications & roadmap.', color: 'emerald', href: '/career', icon: '🎯', badge: 'Personalized' },
+                { title: 'Campus Jobs Portal', desc: 'Browse curated job openings, AI match scores, and application tracking.', color: 'blue', href: '/jobs', icon: '💼', badge: 'Placements' },
             ]
         },
         {
             name: "Interactive AI Practice",
             modules: [
-                { title: 'AI Mock Interview', desc: '8 branches · 3 difficulty levels · 60s timer · Voice input.', color: 'blue', href: '/interview', icon: '🤖', badge: 'Live' },
-                { title: 'AI Coding Interview', desc: 'Real-time multi-language execution · AI feedback · Role-based.', color: 'cyan', href: '/coding-interview', icon: '💻', badge: 'New Module' },
-                { title: 'Assessment Hub', desc: 'MCQs: Python, Java, DBMS, Aptitude, Grammar · 30s timer.', color: 'purple', href: '/assessment', icon: '📝', badge: '70+ Questions' },
+                { title: 'AI Voice Interview', desc: 'Conversational voice interview with LiveKit WebRTC, camera feed & instant AI critique.', color: 'cyan', href: '/ai-interview', icon: '🎙️', badge: 'Realtime Voice' },
+                { title: 'Virtual GD Simulator', desc: 'Multi-persona AI roundtable discussion with live peer turns & 4-pillar scorecard.', color: 'purple', href: '/gd-simulator', icon: '👥', badge: 'New Module' },
+                { title: 'AI Mock & STAR Interview', desc: 'STAR behavioral framework, technical drills & timed response scoring.', color: 'blue', href: '/interview', icon: '🤖', badge: 'STAR Mode' },
+                { title: 'AI Coding Interview', desc: 'Real-time multi-language sandbox execution · AI test runner · Role challenges.', color: 'emerald', href: '/coding-interview', icon: '💻', badge: 'Live IDE' },
+                { title: 'Assessment Hub', desc: 'MCQs: Python, Java, DBMS, Aptitude, Core Engg · 30s timer.', color: 'purple', href: '/assessment', icon: '📝', badge: '70+ Questions' },
             ]
         },
         {
             name: "Growth & Analytics",
             modules: [
-                { title: 'Analytics', desc: 'Track score trends across interviews with Chart.js visualizations.', color: 'indigo', href: '/analytics', icon: '📊', badge: 'Charts' },
+                { title: 'Performance Analytics', desc: 'Score trends across interviews with Chart.js visualizations & drill-down reports.', color: 'indigo', href: '/analytics', icon: '📊', badge: 'History Logs' },
+                { title: 'Campus Leaderboard', desc: 'Live composite rankings comparing interview, ATS, assessment, and coding scores.', color: 'amber', href: '/leaderboard', icon: '🏆', badge: 'Top Ranks' },
             ]
         }
     ];
+
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -251,14 +260,17 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
         { to: '/admin', label: 'HR Admin', icon: <ShieldCheck className="w-5 h-5" /> }
     ] : [
         { to: '/', label: 'Home', icon: <Home className="w-5 h-5" /> },
+        { to: '/ai-interview', label: 'AI Voice', icon: <Sparkles className="w-5 h-5 text-cyan-400" /> },
         { to: '/resume-builder', label: 'Builder', icon: <FileText className="w-5 h-5" /> },
         { to: '/analyze', label: 'Analyzer', icon: <FileText className="w-5 h-5" /> },
         { to: '/jobs', label: 'Jobs', icon: <Briefcase className="w-5 h-5" /> },
         { to: '/interview', label: 'Interview', icon: <MessageSquare className="w-5 h-5" /> },
+        { to: '/gd-simulator', label: 'GD Simulator', icon: <Users className="w-5 h-5 text-purple-400" /> },
         { to: '/coding-interview', label: 'Coding', icon: <Code2 className="w-5 h-5" /> },
         { to: '/assessment', label: 'Assess', icon: <ShieldCheck className="w-5 h-5" /> },
         { to: '/career', label: 'Career', icon: <Compass className="w-5 h-5" /> },
-        { to: '/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> }
+        { to: '/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
+        { to: '/leaderboard', label: 'Rankings', icon: <Trophy className="w-5 h-5" /> }
     ];
 
     const initials = currentUser?.displayName 
@@ -270,16 +282,16 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
     return (
         <>
         {/* Desktop Sidebar (Persistent) */}
-        <div className={`fixed left-0 top-0 bottom-0 z-50 ${sidebarCollapsed ? 'w-16 px-2' : 'w-72 p-8'} h-full bg-slate-900/40 backdrop-blur-3xl border-r border-white/5 shadow-[20px_0_50px_rgba(0,0,0,0.5)] flex flex-col hidden lg:flex transition-all duration-300`}>
-            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} mb-12 mt-2`}>
-                <Link to="/" className="font-black text-xl tracking-tight text-white flex items-center gap-2">
+        <div className={`fixed left-0 top-0 bottom-0 z-50 ${sidebarCollapsed ? 'w-16 px-2 py-4' : 'w-64 px-4 py-5'} h-full bg-white dark:bg-slate-900/40 backdrop-blur-3xl border-r border-slate-200 dark:border-white/5 shadow-xl dark:shadow-[20px_0_50px_rgba(0,0,0,0.5)] flex flex-col hidden lg:flex transition-all duration-300`}>
+            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} mb-4 mt-1`}>
+                <Link to="/" className="font-black text-xl tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                     <div className={`bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg ${sidebarCollapsed ? 'p-1 px-1.5 text-xs' : 'p-1 px-2.5 text-sm'} text-slate-950 font-black shadow-lg shadow-cyan-500/20`}>AI</div>
                     {!sidebarCollapsed && <span>Placement</span>}
                 </Link>
                 {!sidebarCollapsed && (
                     <button 
                         onClick={() => setSidebarCollapsed(true)}
-                        className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                         title="Collapse Sidebar"
                     >
                         <ChevronLeft className="w-5 h-5" />
@@ -288,10 +300,10 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
             </div>
 
             {sidebarCollapsed && (
-                <div className="flex justify-center mb-8">
+                <div className="flex justify-center mb-4">
                     <button 
                         onClick={() => setSidebarCollapsed(false)}
-                        className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl border border-white/5 transition-colors"
+                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl border border-slate-200 dark:border-white/5 transition-colors"
                         title="Expand Sidebar"
                     >
                         <ChevronRight className="w-5 h-5" />
@@ -299,18 +311,19 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                 </div>
             )}
 
-            <div className="flex flex-col gap-2">
+            {/* Scrollable Navigation Area */}
+            <div className="flex flex-col gap-1 flex-grow overflow-y-auto custom-scrollbar scroll-smooth pr-1 my-1">
                 {navLinks.map((link) => {
-                    const linkClasses = `group flex items-center relative overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'p-2 justify-center' : 'px-6 py-4 gap-4'} rounded-2xl ${isActive(link.to) ? 'text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.05)]' : 'text-slate-400 hover:text-white'}`;
+                    const linkClasses = `group flex items-center relative overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'p-2 justify-center' : 'px-3.5 py-2.5 gap-3'} rounded-xl ${isActive(link.to) ? 'text-cyan-600 dark:text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.05)] font-black' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'}`;
                     const innerIcon = (
-                        <div className={`${sidebarCollapsed ? 'p-1.5' : 'p-2'} rounded-xl transition-colors duration-300 relative z-10 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'}`}>
+                        <div className={`${sidebarCollapsed ? 'p-1.5' : 'p-1.5'} rounded-lg transition-colors duration-200 relative z-10 ${isActive(link.to) ? 'bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] text-slate-950' : 'bg-slate-100 dark:bg-slate-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950 text-slate-600 dark:text-slate-400'}`}>
                             <motion.div whileHover={{ rotate: 10, scale: 1.1 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
                                 {link.icon}
                             </motion.div>
                         </div>
                     );
                     const innerLabel = !sidebarCollapsed && (
-                        <span className="text-lg font-bold tracking-wide relative z-10">
+                        <span className="text-sm font-bold tracking-wide relative z-10">
                             {link.label}
                         </span>
                     );
@@ -327,7 +340,7 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                                 {isActive(link.to) && (
                                     <motion.div 
                                         layoutId="activeIndicator" 
-                                        className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl"
+                                        className="absolute inset-0 bg-cyan-500/10 dark:bg-cyan-500/10 border border-cyan-500/20 dark:border-cyan-500/20 rounded-xl"
                                         transition={{ type: "spring", stiffness: 380, damping: 30 }}
                                     />
                                 )}
@@ -346,7 +359,7 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                             {isActive(link.to) && (
                                 <motion.div 
                                     layoutId="activeIndicator" 
-                                    className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl"
+                                    className="absolute inset-0 bg-cyan-500/10 dark:bg-cyan-500/10 border border-cyan-500/20 dark:border-cyan-500/20 rounded-xl"
                                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                                 />
                             )}
@@ -357,13 +370,14 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                 })}
             </div>
 
-            <div className="mt-auto pt-8 border-t border-white/5">
-                <div className={`bg-slate-800/30 ${sidebarCollapsed ? 'p-2 text-center' : 'p-4'} rounded-2xl border border-white/5`}>
+            <div className="mt-auto pt-3 border-t border-slate-200 dark:border-white/5">
+
+                <div className={`bg-slate-100 dark:bg-slate-800/30 ${sidebarCollapsed ? 'p-2 text-center' : 'p-4'} rounded-2xl border border-slate-200 dark:border-white/5`}>
                     {!sidebarCollapsed ? (
                         <>
                             <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Current Tier</p>
                             <div className="flex items-center justify-between">
-                                <span className="text-white font-bold text-sm">Professional Plan</span>
+                                <span className="text-slate-900 dark:text-white font-bold text-sm">Professional Plan</span>
                                 <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-black border border-cyan-500/20">PRO</span>
                             </div>
                         </>
@@ -392,8 +406,9 @@ const Nav = ({ sidebarCollapsed, setSidebarCollapsed }) => {
             </div>
 
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
                 <ThemeToggle />
+                {currentUser && !isHR && <NotificationBell />}
                 {currentUser ? (
                     <div className="relative" ref={dropdownRef}>
                         <button 
@@ -599,13 +614,16 @@ function App() {
                                     <Route path="/forgot-password" element={<ForgotPassword />} />
                                     
                                     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                                    <Route path="/ai-interview" element={<CandidateRoute><ProtectedRoute><AIInterviewContainer /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/analyze" element={<CandidateRoute><ProtectedRoute><ResumeUpload /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/jobs" element={<CandidateRoute><ProtectedRoute><JobOpenings /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/interview" element={<CandidateRoute><ProtectedRoute><AIInterview /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/gd-simulator" element={<CandidateRoute><ProtectedRoute><GDSimulator /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/coding-interview" element={<CandidateRoute><ProtectedRoute><CodingInterview /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/assessment" element={<CandidateRoute><ProtectedRoute><AssessmentHub /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/career" element={<CandidateRoute><ProtectedRoute><CareerAdvisor /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/analytics" element={<CandidateRoute><ProtectedRoute><Analytics /></ProtectedRoute></CandidateRoute>} />
+                                    <Route path="/leaderboard" element={<CandidateRoute><ProtectedRoute><Leaderboard /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/resume-builder" element={<CandidateRoute><ProtectedRoute><ResumeBuilder /></ProtectedRoute></CandidateRoute>} />
                                     <Route path="/admin" element={<HRRoute><ProtectedRoute><HRDashboard /></ProtectedRoute></HRRoute>} />
                                 </Routes>

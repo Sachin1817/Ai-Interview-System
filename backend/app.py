@@ -13,11 +13,16 @@ from routes.career import career_bp
 from routes.assessment import assessment_bp
 from routes.coding import coding_bp
 from routes.admin import admin_bp
+from routes.ai_interview import ai_interview_bp
+from routes.notifications import notifications_bp
+from routes.gd_simulator import gd_bp
 from flask_apscheduler import APScheduler
 import datetime
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # Allow up to 50MB payload for interview recordings
 CORS(app)
+
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -27,6 +32,9 @@ app.register_blueprint(career_bp, url_prefix='/api/career')
 app.register_blueprint(assessment_bp, url_prefix='/api/assessment')
 app.register_blueprint(coding_bp, url_prefix='/api/coding')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
+app.register_blueprint(ai_interview_bp, url_prefix='/api/ai-interview')
+app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
+app.register_blueprint(gd_bp, url_prefix='/api/gd')
 
 # ─── Scheduler ───
 scheduler = APScheduler()

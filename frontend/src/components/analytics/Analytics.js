@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS, CategoryScale, LinearScale, PointElement,
     LineElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
-import { TrendingUp, Trophy, BarChart2, FileText, Clock, Loader2, AlertCircle, Activity, BrainCircuit, Zap } from 'lucide-react';
+import { TrendingUp, Trophy, BarChart2, FileText, Clock, Loader2, AlertCircle, Activity, BrainCircuit, Zap, ExternalLink } from 'lucide-react';
 import api from '../../services/api';
+import InterviewDetailModal from './InterviewDetailModal';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -80,6 +81,7 @@ const Analytics = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [selectedSessionId, setSelectedSessionId] = useState(null);
 
     useEffect(() => {
         const fetchAnalytics = async () => {
@@ -93,6 +95,11 @@ const Analytics = () => {
             }
         };
         fetchAnalytics();
+    }, []);
+
+    const handleRetryTopic = useCallback((branch, topic) => {
+        // Navigate to interview with pre-selected branch + topic hint
+        window.location.href = `/interview?branch=${encodeURIComponent(branch)}&topic=${encodeURIComponent(topic)}`;
     }, []);
 
     if (loading) return (
@@ -175,6 +182,7 @@ const Analytics = () => {
     };
 
     return (
+        <>
         <div className="min-h-screen pt-36 md:pt-40 pb-20 px-6 lg:px-12 relative overflow-visible">
             {/* Ambient Background */}
             <div className="blob blob-1 opacity-20"></div>
@@ -265,6 +273,7 @@ const Analytics = () => {
                         <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-tight">
                             <Clock className="w-6 h-6 text-purple-500" /> History
                         </h3>
+                        <p className="text-xs text-slate-500">Click <b className="text-cyan-400">View Details</b> to drill down into any session</p>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -274,6 +283,7 @@ const Analytics = () => {
                                     <th className="text-left text-slate-500 dark:text-slate-400 font-black px-6 py-5 text-[10px] uppercase tracking-[0.2em]">Subject</th>
                                     <th className="text-left text-slate-500 dark:text-slate-400 font-black px-6 py-5 text-[10px] uppercase tracking-[0.2em]">Difficulty</th>
                                     <th className="text-right text-slate-500 dark:text-slate-400 font-black px-10 py-5 text-[10px] uppercase tracking-[0.2em]">Score</th>
+                                    <th className="text-right text-slate-500 dark:text-slate-400 font-black px-6 py-5 text-[10px] uppercase tracking-[0.2em]">Review</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -312,11 +322,21 @@ const Analytics = () => {
                                                     </span>
                                                 </div>
                                             </td>
+                                            <td className="px-6 py-6 text-right">
+                                                {t.session_id ? (
+                                                    <button
+                                                        onClick={() => setSelectedSessionId(t.session_id)}
+                                                        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-cyan-400 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 px-3 py-1.5 rounded-lg transition-all ml-auto"
+                                                    >
+                                                        <ExternalLink className="w-3 h-3" /> View
+                                                    </button>
+                                                ) : <span className="text-slate-600 text-xs">—</span>}
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="4" className="px-10 py-20 text-center text-slate-500 font-medium italic">
+                                        <td colSpan="5" className="px-10 py-20 text-center text-slate-500 font-medium italic">
                                             No history recorded yet.
                                         </td>
                                     </tr>
@@ -327,6 +347,14 @@ const Analytics = () => {
                 </motion.div>
             </div>
         </div>
+
+        {/* Interview Feedback Drill-Down Modal */}
+        <InterviewDetailModal
+            sessionId={selectedSessionId}
+            onClose={() => setSelectedSessionId(null)}
+            onRetryTopic={handleRetryTopic}
+        />
+        </>
     );
 };
 

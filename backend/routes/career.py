@@ -3,11 +3,120 @@ from services.career_service import get_career_advice, get_job_recommendations, 
 from utils.auth_helper import token_required
 from utils.db import get_db
 from bson.objectid import ObjectId
+import datetime
 
 career_bp = Blueprint('career', __name__)
 db = get_db()
 resumes_col = db['resumes']
 scores_col = db['scores']
+users_col = db['users']
+coding_col = db['coding_submissions']
+assessment_col = db['assessment_scores']
+
+
+@career_bp.route('/leaderboard', methods=['GET'])
+@token_required
+def get_leaderboard(user_id):
+    """
+    Composite leaderboard: Interview 30% + Resume ATS 25% + Assessment 25% + Coding 20%
+    Query params: branch (optional), period (week/month/all)
+    """
+    branch_filter = request.args.get('branch', '')
+    period = request.args.get('period', 'all')
+
+    # Date cutoff
+    cutoff = None
+    now = datetime.datetime.utcnow()
+    if period == 'week':
+        cutoff = now - datetime.timedelta(days=7)
+    elif period == 'month':
+        cutoff = now - datetime.timedelta(days=30)
+
+    # Fetch all non-HR users
+    user_query = {"role": {"$ne": "hr"}}
+    if branch_filter:
+        user_query["branch"] = branch_filter
+    all_users = list(users_col.find(user_query, {"_id": 1, "name": 1, "email": 1, "branch": 1}))
+
+    leaderboard = []
+    caller_rank = None
+
+    for u in all_users:
+        uid = str(u['_id'])
+
+        # Skip test users
+        name = u.get('name', '')
+        email = u.get('email', '')
+        if any(x in name.lower() or x in email.lower() for x in ['test', 'tester', 'mock']):
+            continue
+
+        # Interview score (best of recent sessions, /10 → /100)
+        score_q = {"user_id": uid}
+        if cutoff:
+            score_q["completed_at"] = {"$gte": cutoff}
+        best_interview = scores_col.find_one(score_q, sort=[("overall_score", -1)])
+        interview_score = (best_interview.get("overall_score", 0) * 10) if best_interview else 0
+
+        # Resume ATS score (/100)
+        resume = resumes_col.find_one({"user_id": uid})
+        ats_score = resume["diagnosis"].get("score", 0) if resume and resume.get("diagnosis") else 0
+
+        # Assessment score (latest, /10 → /100)
+        assess_q = {"user_id": uid}
+        if cutoff:
+            assess_q["completed_at"] = {"$gte": cutoff}
+        best_assess = assessment_col.find_one(assess_q, sort=[("score", -1)])
+        assessment_score = (best_assess.get("score", 0) * 10) if best_assess else 0
+
+        # Coding score: count passed challenges (each = 10 pts, max 100)
+        coding_q = {"user_id": uid, "result.passed": True}
+        if cutoff:
+            coding_q["submitted_at"] = {"$gte": cutoff}
+        coding_passed = coding_col.count_documents(coding_q)
+        coding_score = min(coding_passed * 10, 100)
+
+        # Composite
+        composite = round(
+            interview_score * 0.30 +
+            ats_score * 0.25 +
+            assessment_score * 0.25 +
+            coding_score * 0.20,
+            1
+        )
+
+        # Anonymize name: "Sachin D." format
+        parts = name.strip().split()
+        anon_name = parts[0] if parts else "User"
+        if len(parts) > 1:
+            anon_name += f" {parts[-1][0]}."
+
+        leaderboard.append({
+            "user_id": uid,
+            "name": anon_name,
+            "branch": u.get("branch", "CSE"),
+            "composite": composite,
+            "interview_score": round(interview_score, 1),
+            "ats_score": round(ats_score, 1),
+            "assessment_score": round(assessment_score, 1),
+            "coding_score": round(coding_score, 1),
+            "is_me": uid == user_id,
+        })
+
+    # Sort descending
+    leaderboard.sort(key=lambda x: x["composite"], reverse=True)
+
+    # Assign rank and find caller's rank
+    for i, entry in enumerate(leaderboard):
+        entry["rank"] = i + 1
+        if entry["is_me"]:
+            caller_rank = i + 1
+
+    return jsonify({
+        "leaderboard": leaderboard[:50],   # top 50
+        "my_rank": caller_rank,
+        "total": len(leaderboard),
+    }), 200
+
 
 @career_bp.route('/advice', methods=['GET'])
 @token_required
@@ -76,6 +185,7 @@ def get_analytics(user_id):
     trend = [
         {
             "label": f"Interview {i+1}",
+            "session_id": h.get("session_id", ""),
             "overall": h.get("overall_score", 0),
             "domain": h.get("domain_score", 0),
             "communication": h.get("communication_score", 0),

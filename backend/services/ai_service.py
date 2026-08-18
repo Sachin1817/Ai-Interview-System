@@ -12,13 +12,13 @@ client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
 
-def generate_ai_response(prompt, model_id="llama-3.3-70b-versatile", retries=3, delay=5):
+def generate_ai_response(prompt, model_id="groq/compound", retries=3, delay=5):
     """
     Centralized function to generate AI responses using the Groq Cloud SDK.
     Handles client calls, error logging, and retry logic for rate limits.
     If the primary model fails or is rate limited, falls back to a secondary model.
     """
-    fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"]
+    fallback_models = ["groq/compound", "groq/compound-mini", "allam-2-7b"]
     models_to_try = [model_id]
     for m in fallback_models:
         if m not in models_to_try:
@@ -69,13 +69,13 @@ def generate_ai_response(prompt, model_id="llama-3.3-70b-versatile", retries=3, 
     print("ERROR [Groq]: All models and retries failed. AI service is unavailable.")
     return None
 
-def generate_chat_completion(messages, model_id="llama-3.3-70b-versatile", retries=3, delay=5):
+def generate_chat_completion(messages, model_id="groq/compound", retries=3, delay=5):
     """
     New function to handle full message list for multi-turn conversations.
     Messages format: [{'role': 'system', 'content': '...'}, {'role': 'user', 'content': '...'}]
     Handles fallbacks.
     """
-    fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"]
+    fallback_models = ["groq/compound", "groq/compound-mini", "allam-2-7b"]
     models_to_try = [model_id]
     for m in fallback_models:
         if m not in models_to_try:

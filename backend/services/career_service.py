@@ -798,7 +798,7 @@ def chat_with_career_assistant(message, user_skills=None, branch="General", role
         messages.append({"role": "user", "content": message})
         
         # 3. Generate response using llama-3.1-8b-instant for fast interaction
-        response = generate_chat_completion(messages, model_id="llama-3.1-8b-instant")
+        response = generate_chat_completion(messages, model_id="groq/compound-mini")
         
         if response:
             return {"reply": response}

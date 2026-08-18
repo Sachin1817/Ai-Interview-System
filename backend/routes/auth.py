@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify
 from utils.db import get_db
 from utils.auth_helper import hash_password, verify_password, generate_token
 from bson.objectid import ObjectId
+import os
+
+HR_ADMIN_EMAIL = os.environ.get('HR_ADMIN_EMAIL', 'sachindevaraju49@gmail.com').lower()
 
 auth_bp = Blueprint('auth', __name__)
 db = get_db()
@@ -16,8 +19,8 @@ def register():
     branch = data.get('branch', 'CSE')
     firebase_uid = data.get('firebaseUid')
     
-    # sachindevaraju49@gmail.com is exclusively the HR admin
-    if email and email.lower() == 'sachindevaraju49@gmail.com':
+    # HR admin email is configured in .env as HR_ADMIN_EMAIL
+    if email and email.lower() == HR_ADMIN_EMAIL:
         role = 'hr'
     else:
         role = data.get('role', 'candidate')
@@ -34,7 +37,7 @@ def register():
         # If user exists, just return success if it's a Firebase sync
         if firebase_uid:
              user_role = existing_user.get('role', 'candidate')
-             if email.lower() == 'sachindevaraju49@gmail.com' and user_role != 'hr':
+             if email.lower() == HR_ADMIN_EMAIL and user_role != 'hr':
                  users_col.update_one({"_id": existing_user["_id"]}, {"$set": {"role": "hr"}})
                  user_role = 'hr'
              token = generate_token(existing_user['_id'])
@@ -90,7 +93,7 @@ def login():
     user = users_col.find_one({"email": email})
     if user and 'password' in user and verify_password(user['password'], password):
         user_role = user.get('role', 'candidate')
-        if email.lower() == 'sachindevaraju49@gmail.com' and user_role != 'hr':
+        if email.lower() == HR_ADMIN_EMAIL and user_role != 'hr':
             users_col.update_one({"_id": user["_id"]}, {"$set": {"role": "hr"}})
             user_role = 'hr'
         token = generate_token(user['_id'])

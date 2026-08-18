@@ -109,7 +109,7 @@ def generate_assessment():
         Crucial: "answer" MUST be the exact string from the "options" array.
         """
 
-        raw_text_raw = generate_ai_response(prompt, model_id="llama-3.3-70b-versatile")
+        raw_text_raw = generate_ai_response(prompt, model_id="groq/compound")
         if not raw_text_raw:
              print("DEBUG [Assessment]: AI failed to return anything.")
              raise ValueError("AI failed to generate assessment")

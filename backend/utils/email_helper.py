@@ -120,3 +120,70 @@ def send_status_email(candidate_email, candidate_name, job_title, company, new_s
         logger.error(f"Failed to send email notification to {candidate_email}: {e}")
         print(f"Failed to send email to {candidate_email}: {e}")
         return False
+
+
+def send_custom_email(to_email, recipient_name, subject, message_body):
+    """
+    Sends a custom subject & body email message (with fallback to logs).
+    """
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #0F1728; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                <h1 style="color: #06B6D4; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">Placement AI</h1>
+            </div>
+            <div style="padding: 20px; border: 1px solid #E2E8F0; border-top: none; border-radius: 0 0 8px 8px;">
+                <p>Hello <strong>{recipient_name}</strong>,</p>
+                <div style="white-space: pre-line; color: #1E293B; font-size: 14px; margin: 16px 0;">
+                    {message_body}
+                </div>
+                <br />
+                <p>Best regards,<br /><strong>Campus Placement & Recruitment Team</strong><br /><span style="color: #64748B; font-size: 12px;">Placement AI Portal</span></p>
+            </div>
+        </body>
+    </html>
+    """
+
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_port = os.getenv("SMTP_PORT")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASSWORD")
+    smtp_from = os.getenv("SMTP_FROM", smtp_user or "noreply@placementai.com")
+
+    if not smtp_host or not smtp_user or not smtp_pass:
+        print(f"[MOCK BULK EMAIL] To: {to_email} ({recipient_name}) | Subject: {subject}")
+        log_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../logs"))
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "email_dispatches.log")
+        try:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"\n--- [BULK EMAIL] {datetime.datetime.utcnow().isoformat()} ---\n")
+                f.write(f"To: {to_email} ({recipient_name})\n")
+                f.write(f"Subject: {subject}\n")
+                f.write(f"Body:\n{message_body}\n")
+        except Exception as e:
+            print(f"Failed to log bulk email dispatch: {e}")
+        return True
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = smtp_from
+        msg["To"] = to_email
+        msg["Date"] = email.utils.formatdate(localtime=True)
+        msg["Message-ID"] = email.utils.make_msgid(domain=smtp_from.split('@')[-1])
+
+        msg.attach(MIMEText(message_body, "plain"))
+        msg.attach(MIMEText(html_content, "html"))
+
+        port = int(smtp_port) if smtp_port else 587
+        server = smtplib.SMTP(smtp_host, port)
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_from, [to_email], msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Failed to send bulk email to {to_email}: {e}")
+        return False
+

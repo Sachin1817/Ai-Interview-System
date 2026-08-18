@@ -33,8 +33,7 @@ router.post('/analyze', async (req, res) => {
 
         const completion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: "llama-3.3-70b-versatile",
-            response_format: { type: "json_object" }
+            model: "llama-3.1-8b-instant",
         });
 
         const responseText = completion.choices[0].message.content;
@@ -55,7 +54,7 @@ router.post('/improve-description', async (req, res) => {
         `;
         const completion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: "llama-3.3-70b-versatile",
+            model: "llama-3.1-8b-instant",
         });
         res.json({ improved: completion.choices[0].message.content.trim() });
     } catch (error) {
@@ -77,7 +76,7 @@ router.post('/generate-summary', async (req, res) => {
         `;
         const completion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: "llama-3.3-70b-versatile",
+            model: "llama-3.1-8b-instant",
         });
         res.json({ summary: completion.choices[0].message.content.trim() });
     } catch (error) {

@@ -114,3 +114,100 @@
   @apply w-1.5 hover:w-2 bg-slate-200 dark:bg-slate-800 hover:bg-cyan-500/50 transition-all cursor-col-resize h-full;
 }
 
+/* Premium Light Mode Overrides */
+.light {
+  color-scheme: light;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.light .bg-slate-950\/50,
+.light .bg-slate-900\/60,
+.light .bg-slate-900\/40,
+.light .bg-slate-900\/50,
+.light .bg-\[\#0A1120\],
+.light .bg-slate-900\/30,
+.light .bg-slate-950\/70,
+.light .bg-slate-950\/80,
+.light .bg-slate-950,
+.light .bg-\[\#0F1728\],
+.light .bg-\[\#0F1728\]\/60 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: #0f172a !important;
+}
+
+.light .bg-\[\#060b16\] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.light .bg-\[\#060b16\]\/60,
+.light .bg-\[\#060b16\]\/40 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.light .border-slate-800,
+.light .border-slate-700,
+.light .border-white\/5,
+.light .border-white\/10,
+.light .border-\[\#1E293B\],
+.light .border-r-\[\#1E293B\],
+.light .border-b-\[\#1E293B\],
+.light .border-t-\[\#1E293B\],
+.light .border-slate-200 {
+  border-color: #e2e8f0 !important;
+}
+
+.light .text-slate-400,
+.light .text-slate-500 {
+  color: #475569 !important;
+}
+
+.light .text-white,
+.light .text-slate-200,
+.light .text-slate-100 {
+  color: #1e293b !important;
+}
+
+.light h1.text-white, 
+.light h2.text-white, 
+.light h3.text-white, 
+.light h4.text-white,
+.light span.text-white,
+.light p.text-white {
+  color: #0f172a !important;
+}
+
+.light .premium-input {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light .bg-slate-800:hover {
+  background-color: #e2e8f0 !important;
+}
+
+.light .text-cyan-400 {
+  color: #0891b2 !important;
+}
+.light .bg-cyan-500\/10 {
+  background-color: rgba(6, 182, 212, 0.1) !important;
+}
+
+

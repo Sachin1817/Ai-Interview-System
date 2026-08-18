@@ -109,61 +109,108 @@ def get_branch_roles(branch):
     }
     return branch_info.get(branch, ["Software Engineer", "Systems Engineer"])
 
-def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n=10):
+def get_interview_questions(branch, difficulty="Beginner", role=None, round_type="Technical", n=5):
     """
-    Generate n unique interview questions using Gemini/Groq AI.
+    Generate dynamic, diverse, and contextual interview questions via Groq Cloud AI.
+    Supports Technical, Behavioral (STAR Method), and Mixed rounds.
     """
-    print(f"DEBUG: Generating {n} interview questions for {branch} - {role} ({difficulty})")
-    
     role_topics = ROLE_TOPIC_MAP.get(role, []) if role else []
-    role_context = f"\n        - Relevant Domain Topics to Focus On: {', '.join(role_topics)}" if role_topics else ""
-    
-    # Generate a unique seed for this session to ensure randomness
-    random_seed = f"{datetime.datetime.now().timestamp()}_{branch}_{role}"
-    
+    role_context = f" targeting the '{role}' role (key topics: {', '.join(role_topics)})" if role and role_topics else ""
+    random_seed = f"{datetime.datetime.now().timestamp()}_{branch}_{role}_{round_type}"
+
     try:
-        prompt = f"""
-        You are an elite technical interviewer. Generate exactly {n} interview questions as a JSON array.
-        
-        Candidate Profile:
-        - Branch: {branch}
-        - Target Role: {role or 'General Engineer'}{role_context}
-        - Difficulty: {difficulty}
-        - Diversity Seed: {random_seed}
-        
-        Requirements (Unique & Diverse):
-        1. Contextual & Unique: Each question must be 2-3 sentences long, describing a realistic system design, debugging, or optimization scenario. Avoid generic definitions or simple "What is X" questions.
-        2. Role Deep-Dive: High relevance to the selected target role ({role or 'General Engineer'}). Focus on real-world applications, engineering trade-offs, and scenario-based problem-solving.
-        3. Difficulty Alignment: Ensure the question depth matches the '{difficulty}' level (e.g., basic concepts/troubleshooting for Beginner, design trade-offs and performance optimizations for Advanced).
-        4. No Repetition: Do not repeat concepts across questions. Ensure a wide coverage of the target role's core domain topics.
-        5. Structure: {n-1} Technical questions, 1 Behavioral/Scenario question.
-        
-        Output format:
-        [
-            {{
-                "id": "q1",
-                "question": "Question text...",
-                "topic": "Sub-topic"
-            }}
-        ]
-        
-        Important: Return ONLY the JSON array. No markdown, no conversation.
-        """
-        
+        if round_type in ["Behavioral", "STAR"]:
+            prompt = f"""
+            You are an executive HR and technical leadership interviewer conducting a behavioral interview using the STAR method (Situation, Task, Action, Result).
+            Generate exactly {n} distinct behavioral interview questions as a JSON array.
+
+            Candidate Profile:
+            - Engineering Branch: {branch}
+            - Target Role: {role or 'Software Engineer'}{role_context}
+            - Seniority Level: {difficulty}
+            - Diversity Seed: {random_seed}
+
+            Question Criteria:
+            1. Scenarios must test core workplace competencies: Leadership, Conflict Resolution, Overcoming Failure, Tight Deadlines, and Cross-functional Teamwork.
+            2. Each question should start with prompts like "Tell me about a time when...", "Describe a scenario where...", or "Give an example of how you handled...".
+            3. Questions must feel authentic to {role or 'Engineering'} projects.
+            4. Include a helpful STAR guide hint for each question.
+
+            Output format JSON ONLY:
+            [
+                {{
+                    "id": "q1",
+                    "question": "Describe a time when you discovered a critical bug right before a major release. How did you handle the situation and stakeholders?",
+                    "topic": "Handling Crisis & Deadlines",
+                    "round_type": "Behavioral",
+                    "star_hint": "Outline the release emergency (Situation/Task), your mitigation & communication plan (Action), and the eventual outcome & preventative fixes (Result)."
+                }}
+            ]
+            """
+        elif round_type == "Mixed":
+            prompt = f"""
+            You are an elite interviewer. Generate exactly {n} interview questions as a JSON array ({n-2} Technical questions and 2 Behavioral STAR questions).
+
+            Candidate Profile:
+            - Branch: {branch}
+            - Target Role: {role or 'General Engineer'}{role_context}
+            - Difficulty: {difficulty}
+            - Diversity Seed: {random_seed}
+
+            Output format JSON ONLY:
+            [
+                {{
+                    "id": "q1",
+                    "question": "Question text...",
+                    "topic": "Sub-topic",
+                    "round_type": "Technical",
+                    "star_hint": ""
+                }}
+            ]
+            """
+        else:
+            prompt = f"""
+            You are an elite technical interviewer. Generate exactly {n} technical interview questions as a JSON array.
+            
+            Candidate Profile:
+            - Branch: {branch}
+            - Target Role: {role or 'General Engineer'}{role_context}
+            - Difficulty: {difficulty}
+            - Diversity Seed: {random_seed}
+            
+            Requirements:
+            1. Contextual & Unique: 2-3 sentences long, describing a realistic system design, debugging, or optimization scenario.
+            2. High relevance to the selected target role ({role or 'General Engineer'}).
+            3. Difficulty Alignment: Matches the '{difficulty}' level.
+            4. No Repetition across questions.
+            
+            Output format JSON ONLY:
+            [
+                {{
+                    "id": "q1",
+                    "question": "Question text...",
+                    "topic": "Sub-topic",
+                    "round_type": "Technical",
+                    "star_hint": ""
+                }}
+            ]
+            """
+
         raw_text = generate_ai_response(prompt)
         if not raw_text:
-             raise ValueError("AI Service failed to generate interview questions")
-        
+            raise ValueError("AI Service failed to generate interview questions")
+
         questions = _clean_json_response(raw_text)
         if not questions:
             raise ValueError(f"Failed to parse AI response as JSON. Raw text: {raw_text}")
-        
-        # Ensure ID uniqueness and format
+
         for i, q in enumerate(questions):
             q['id'] = f"ai_int_{i}_{datetime.datetime.now().microsecond}"
-            
+            if 'round_type' not in q:
+                q['round_type'] = round_type
+
         return questions[:n]
-        
+
     except Exception as e:
         print(f"AI Interview Generation Error: {e}. Falling back to static bank.")
         # Fallback to static logic, filtered by role topics if possible
@@ -190,41 +237,92 @@ def get_interview_questions(branch, difficulty, role=None, resume_skills=None, n
         random.shuffle(results)
         return results[:n]
 
-def evaluate_answer_nlp(question, answer, topic):
+def evaluate_answer_nlp(question, answer, topic, round_type="Technical"):
     """
-    LLM-powered answer evaluation for the interview.
+    LLM-powered answer evaluation with STAR (Situation, Task, Action, Result) breakdown when applicable.
     """
     if not answer or len(answer.strip()) < 5:
         return {
             "technical_score": 0.0, "relevance_score": 0.0, "completeness_score": 0.0,
             "communication_score": 0.0, "confidence_score": 0.0, "overall_score": 0.0,
+            "situation_score": 0.0, "task_score": 0.0, "action_score": 0.0, "result_score": 0.0,
+            "star_breakdown": {"situation": "Missing", "task": "Missing", "action": "Missing", "result": "Missing"},
             "feedback": "No answer provided or answer too short."
-        } if not answer else {
-            "technical_score": 0.0, "relevance_score": 0.0, "completeness_score": 0.0,
-            "communication_score": 0.0, "confidence_score": 0.0, "overall_score": 0.0,
-            "feedback": "The answer is too brief to indicate any understanding."
         }
 
+    is_star = round_type in ["Behavioral", "STAR"] or any(
+        kw in topic.lower() for kw in ["behavioral", "leadership", "conflict", "crisis", "teamwork", "hr", "star"]
+    )
+
     try:
-        prompt = f"""
-        You are an expert technical interviewer evaluating a candidate's answer.
-        Question: {question}
-        Topic: {topic}
-        Candidate's Answer: {answer}
-        
-        Evaluate the answer strictly on a scale of 0 to 10 for the following metrics:
-        1. technical_score: Accuracy of the technical concepts.
-        2. relevance_score: How well it directly addresses the question.
-        3. completeness_score: Whether it covers all parts of the question.
-        4. communication_score: Clarity, grammar, and professional tone.
-        5. confidence_score: The decisiveness of the answer.
-        
-        Provide constructive, specific feedback (1-2 sentences) as 'feedback'.
-        
-        Output MUST be pure JSON with these keys: 
-        technical_score, relevance_score, completeness_score, communication_score, confidence_score, overall_score, feedback.
-        overall_score should be a weighted average (Accuracy 40%, Relevance 30%, Completeness 20%, Communication 10%).
-        """
+        if is_star:
+            prompt = f"""
+            You are a senior hiring manager and executive behavioral coach.
+            Evaluate the candidate's response to the behavioral question using the STAR framework (Situation, Task, Action, Result).
+
+            Question: {question}
+            Competency/Topic: {topic}
+            Candidate's Answer: {answer}
+
+            Analyze strictly on a scale of 0 to 10 for:
+            1. situation_score: Clear context, background, and stakes.
+            2. task_score: Clear personal responsibility and goals.
+            3. action_score: Specific initiative, leadership, and technical/interpersonal steps taken.
+            4. result_score: Quantifiable outcome, impact, lessons learned, and business value.
+            5. communication_score: Articulation, structure, and professional tone.
+            6. overall_score: Weighted composite (Situation 20%, Task 15%, Action 35%, Result 30%).
+
+            Also extract the STAR breakdown summary (1 sentence each for Situation, Task, Action, Result) and specific coaching feedback with actionable tips.
+
+            Output MUST be pure JSON format:
+            {{
+                "technical_score": 8.0,
+                "relevance_score": 8.5,
+                "completeness_score": 8.0,
+                "communication_score": 8.5,
+                "confidence_score": 8.0,
+                "situation_score": 8.5,
+                "task_score": 8.0,
+                "action_score": 9.0,
+                "result_score": 7.5,
+                "overall_score": 8.4,
+                "star_breakdown": {{
+                    "situation": "Identified latency spike during Black Friday traffic surge.",
+                    "task": "Owned database query optimization to bring p99 latency under 200ms.",
+                    "action": "Profiled slow queries, introduced Redis caching layer, and optimized indexing.",
+                    "result": "Reduced p99 latency by 64% with zero downtime during peak sales."
+                }},
+                "star_tip": "Quantify the business impact even more clearly (e.g. revenue protected or server costs saved).",
+                "feedback": "Strong structured response demonstrating clear problem ownership and decisive technical action."
+            }}
+            """
+        else:
+            prompt = f"""
+            You are an expert technical interviewer evaluating a candidate's answer.
+            Question: {question}
+            Topic: {topic}
+            Candidate's Answer: {answer}
+            
+            Evaluate strictly on a scale of 0 to 10:
+            1. technical_score: Accuracy of technical concepts.
+            2. relevance_score: Direct responsiveness to the prompt.
+            3. completeness_score: Thoroughness of explanation.
+            4. communication_score: Clarity, structure, and professional terminology.
+            5. confidence_score: Decisiveness and depth.
+            6. overall_score: Weighted average (Tech 40%, Relevance 30%, Completeness 20%, Comm 10%).
+            7. feedback: 1-2 constructive sentences.
+            
+            Output MUST be pure JSON format:
+            {{
+                "technical_score": 8.0,
+                "relevance_score": 8.5,
+                "completeness_score": 8.0,
+                "communication_score": 8.0,
+                "confidence_score": 8.0,
+                "overall_score": 8.2,
+                "feedback": "Clear explanation with good technical depth."
+            }}
+            """
         
         raw_text = generate_ai_response(prompt)
         if not raw_text:

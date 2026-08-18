@@ -55,10 +55,17 @@ const BRANCH_ROLES = {
 // AILoadingOverlay is now imported from ../layout/AILoadingOverlay
 
 // ─────── Setup Screen ───────
+const ROUND_TYPES = [
+    { id: 'Technical', label: 'Technical Track', icon: '⚡', desc: 'Core architecture, design, and domain concepts' },
+    { id: 'Behavioral', label: 'Behavioral (STAR)', icon: '🌟', desc: 'Situation, Task, Action, Result framework' },
+    { id: 'Mixed', label: 'Mixed Track', icon: '🎯', desc: 'Combined technical & leadership scenarios' },
+];
+
 const SetupScreen = ({ onStart }) => {
     const [branch, setBranch] = useState('CSE');
     const [difficulty, setDifficulty] = useState('Beginner');
     const [role, setRole] = useState(BRANCH_ROLES['CSE'].roles[0]);
+    const [roundType, setRoundType] = useState('Technical');
     const [loading, setLoading] = useState(false);
 
     const branchInfo = BRANCH_ROLES[branch];
@@ -71,7 +78,7 @@ const SetupScreen = ({ onStart }) => {
     const handleStart = async () => {
         setLoading(true);
         try {
-            const res = await api.post('/interview/start', { branch, difficulty, role });
+            const res = await api.post('/interview/start', { branch, difficulty, role, round_type: roundType });
             onStart(res.data);
         } catch (e) {
             alert('Please login first to start an interview.');
@@ -88,15 +95,43 @@ const SetupScreen = ({ onStart }) => {
             </div>
 
             <div className="relative z-10">
-                <header className="mb-12">
-                    <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-6 shadow-glow-cyan">
-                        AI INTERVIEWER
+                <header className="mb-10">
+                    <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-4 shadow-glow-cyan">
+                        AI INTERVIEWER • STAR FRAMEWORK READY
                     </div>
                     <h2 className="text-5xl font-black mb-4 text-slate-900 dark:text-white tracking-tighter">
                         Ace Your <span className="hero-gradient">Interview</span>
                     </h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-lg font-medium max-w-xl">Configure your perfect mock interview. Our AI adapts its questions to your specific background.</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-lg font-medium max-w-xl">Configure your perfect mock interview with Technical or STAR Behavioral coaching.</p>
                 </header>
+
+                {/* Round Type Selector */}
+                <div className="mb-8">
+                    <label className="section-heading mb-4">Select Interview Track</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {ROUND_TYPES.map(rt => {
+                            const isSelected = roundType === rt.id;
+                            return (
+                                <button
+                                    key={rt.id}
+                                    type="button"
+                                    onClick={() => setRoundType(rt.id)}
+                                    className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
+                                        isSelected
+                                            ? 'bg-cyan-500/10 border-cyan-500 shadow-glow-cyan scale-[1.02]'
+                                            : 'bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 hover:border-cyan-500/30'
+                                    }`}
+                                >
+                                    <div className="text-2xl mb-1">{rt.icon}</div>
+                                    <p className={`text-xs font-black uppercase tracking-wider ${isSelected ? 'text-cyan-400' : 'text-slate-200'}`}>
+                                        {rt.label}
+                                    </p>
+                                    <p className="text-[10px] text-slate-500 mt-1 leading-snug">{rt.desc}</p>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     <div className="space-y-10">
@@ -270,6 +305,7 @@ const InterviewScreen = ({ session, onFinish }) => {
                 question: currentQ.question,
                 answer: ans,
                 topic: currentQ.topic,
+                round_type: currentQ.round_type || session.round_type || 'Technical',
             });
             
             setAnswer('');
@@ -282,6 +318,7 @@ const InterviewScreen = ({ session, onFinish }) => {
                     session_id: session.session_id,
                     branch: session.branch,
                     difficulty: session.difficulty,
+                    round_type: session.round_type || 'Technical',
                 });
                 onFinish(result.data, []);
             }
@@ -292,23 +329,52 @@ const InterviewScreen = ({ session, onFinish }) => {
         }
     };
 
+    const recognitionRef = useRef(null);
+    const baseAnswerRef = useRef('');
+
     const handleVoice = () => {
         if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
             alert('Voice not supported in this browser. Please use text input.');
             return;
         }
+
+        if (recording && recognitionRef.current) {
+            recognitionRef.current.stop();
+            setRecording(false);
+            return;
+        }
+
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new Recognition();
         recognition.lang = 'en-US';
-        recognition.interimResults = false;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognitionRef.current = recognition;
+
+        baseAnswerRef.current = answer ? answer.trim() + ' ' : '';
+
         recognition.onstart = () => setRecording(true);
         recognition.onend = () => setRecording(false);
+        recognition.onerror = () => setRecording(false);
+
         recognition.onresult = (e) => {
-            const transcript = e.results[0][0].transcript;
-            setAnswer(prev => (prev + ' ' + transcript).trim());
+            let sessionTranscript = '';
+            for (let i = 0; i < e.results.length; i++) {
+                sessionTranscript += e.results[i][0].transcript;
+            }
+            setAnswer((baseAnswerRef.current + sessionTranscript).trim());
         };
-        recognition.start();
+
+        try {
+            recognition.start();
+        } catch (err) {
+            console.error("Speech start error:", err);
+            setRecording(false);
+        }
     };
+
+
+    const isStarQ = currentQ.round_type === 'Behavioral' || session.round_type === 'Behavioral' || currentQ.star_hint;
 
     return (
         <div className="max-w-4xl mx-auto space-y-10">
@@ -344,14 +410,39 @@ const InterviewScreen = ({ session, onFinish }) => {
                                 <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg bg-emerald-500 border-4 border-white dark:border-slate-950 pulse animate-pulse" />
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em] mb-1">AI Interviewer</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em]">AI Interviewer</span>
+                                    {isStarQ && (
+                                        <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                                            STAR Method
+                                        </span>
+                                    )}
+                                </div>
                                 <h4 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">Evaluating: {currentQ.topic}</h4>
                             </div>
                         </div>
-                        <Timer key={currentIdx} duration={60} onExpire={() => submitAnswer(answer || '(Session terminated by timeout)')} />
+                        <Timer key={currentIdx} duration={90} onExpire={() => submitAnswer(answer || '(Session terminated by timeout)')} />
                     </div>
 
                     <div className="p-10 lg:p-14">
+                        {/* STAR Framework Helper Box */}
+                        {isStarQ && (
+                            <div className="mb-8 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                                <div className="flex items-center gap-2 text-amber-400 text-xs font-black uppercase tracking-wider">
+                                    <span>🌟 STAR Strategy Guide</span>
+                                </div>
+                                <p className="text-xs text-slate-300 leading-relaxed">
+                                    {currentQ.star_hint || "Structure your answer: 1) Situation (the context) → 2) Task (your goal) → 3) Action (steps you took) → 4) Result (quantified impact & learnings)."}
+                                </p>
+                                <div className="grid grid-cols-4 gap-2 pt-2 border-t border-amber-500/10 text-center">
+                                    <div className="p-1.5 rounded-lg bg-white/5"><span className="text-[9px] font-black text-amber-400">S: Situation</span></div>
+                                    <div className="p-1.5 rounded-lg bg-white/5"><span className="text-[9px] font-black text-amber-400">T: Task</span></div>
+                                    <div className="p-1.5 rounded-lg bg-white/5"><span className="text-[9px] font-black text-amber-400">A: Action</span></div>
+                                    <div className="p-1.5 rounded-lg bg-white/5"><span className="text-[9px] font-black text-amber-400">R: Result</span></div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="relative mb-12">
                             <div className="absolute -top-6 -left-6 text-7xl text-cyan-500/10 font-serif leading-none">“</div>
                             <p className="text-2xl lg:text-3xl text-slate-900 dark:text-white font-bold leading-[1.4] tracking-tight relative z-10">
@@ -362,7 +453,7 @@ const InterviewScreen = ({ session, onFinish }) => {
 
                         <div className="relative group">
                             <textarea ref={textareaRef} value={answer} onChange={e => setAnswer(e.target.value)}
-                                placeholder="Articulation is key. Type your response here..."
+                                placeholder={isStarQ ? "Use the STAR method: Describe Situation -> Task -> Action -> Result..." : "Articulation is key. Type your response here..."}
                                 rows={6}
                                 className="premium-input !rounded-[2rem] !p-8 !text-lg !leading-relaxed mb-8 min-h-[220px]" />
                             

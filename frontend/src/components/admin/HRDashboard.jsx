@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Award, Briefcase, Plus, Send, Play, Users, BarChart3,
     BookOpen, Sparkles, CheckCircle, AlertCircle, X, ChevronRight, Code, User,
@@ -8,6 +9,11 @@ import {
     ChevronDown, Download, Eye, TrendingUp, Terminal
 } from 'lucide-react';
 import api from '../../services/api';
+import aiInterviewAPI from '../../services/aiInterviewApi';
+import AIInterviewReviewModal from './AIInterviewReviewModal';
+import HRAnalyticsDashboard from './HRAnalyticsDashboard';
+import BulkActionBar from './BulkActionBar';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const renderFeedbackDetails = (feedback) => {
     if (!feedback) return "Evaluation complete. Satisfactory responses.";
@@ -81,6 +87,16 @@ const renderFeedbackDetails = (feedback) => {
 
 const HRDashboard = () => {
     const navigate = useNavigate();
+    const { theme } = useTheme() || { theme: 'dark' };
+
+    const getSidebarBtnClass = (tabName) => {
+        const isCurrent = activeTab === tabName;
+        return `w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${
+            isCurrent
+                ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+        }`;
+    };
 
     // Core Layout States
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -97,6 +113,22 @@ const HRDashboard = () => {
     const [rankedCandidates, setRankedCandidates] = useState([]);
     const [applicationsList, setApplicationsList] = useState([]);
     const [applicationFilter, setApplicationFilter] = useState('All');
+
+    // Multi-select & Bulk Action states
+    const [selectedCandidateIds, setSelectedCandidateIds] = useState([]);
+    const [selectedAppIds, setSelectedAppIds] = useState([]);
+    const [bulkUpdating, setBulkUpdating] = useState(false);
+
+    // Bulk Email Modal state
+    const [emailModal, setEmailModal] = useState({
+        open: false,
+        candidateIds: [],
+        recipientCount: 0,
+        subject: '',
+        body: '',
+        template: 'custom'
+    });
+    const [sendingEmail, setSendingEmail] = useState(false);
 
     // Form states for posting a job
     const [newJob, setNewJob] = useState({
@@ -129,6 +161,10 @@ const HRDashboard = () => {
 
     const [assignRole, setAssignRole] = useState('Software Engineer');
 
+    // AI Voice Interview Sessions State
+    const [aiSessions, setAiSessions] = useState([]);
+    const [reviewSession, setReviewSession] = useState(null);
+
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: 'success' });
     const [adminInfo, setAdminInfo] = useState({ name: 'HR Admin', email: 'sachindevaraju49@gmail.com' });
@@ -149,7 +185,17 @@ const HRDashboard = () => {
         fetchJobs();
         fetchSubmissions();
         fetchApplicationsList();
+        fetchAiSessions();
     }, [navigate]);
+
+    const fetchAiSessions = async () => {
+        try {
+            const res = await aiInterviewAPI.getAdminSessions();
+            setAiSessions(res.data || []);
+        } catch (err) {
+            console.error("Failed to fetch AI interview sessions:", err);
+        }
+    };
 
     const fetchCandidates = async (query = '') => {
         try {
@@ -216,6 +262,31 @@ const HRDashboard = () => {
         }
     };
 
+    const handlePreviewResume = async (candId) => {
+        try {
+            const res = await api.get(`/admin/resume/${candId}/download`, { responseType: 'blob' });
+            const file = new Blob([res.data], { type: 'application/pdf' });
+            const fileURL = URL.createObjectURL(file);
+            window.open(fileURL);
+        } catch (e) {
+            console.error(e);
+            if (e.response && e.response.data instanceof Blob) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const errorData = JSON.parse(reader.result);
+                        alert(errorData.message || "Failed to download or preview candidate's resume PDF.");
+                    } catch (parseError) {
+                        alert("Failed to download or preview candidate's resume PDF.");
+                    }
+                };
+                reader.readAsText(e.response.data);
+            } else {
+                alert(e.response?.data?.message || "Failed to download or preview candidate's resume PDF.");
+            }
+        }
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
         fetchCandidates(searchQuery);
@@ -261,6 +332,12 @@ const HRDashboard = () => {
     const handleAssignInterview = async () => {
         setMessage({ text: '', type: 'success' });
         const { candidate, type } = assignModal;
+
+        if (candidate?.isBulk) {
+            handleBulkAssignSubmit();
+            return;
+        }
+
         try {
             const payload = {
                 candidate_id: candidate.id,
@@ -313,6 +390,149 @@ const HRDashboard = () => {
         setManualQuestions(updated);
     };
 
+    // ─── Export & Bulk Action Handlers ───
+    const handleExportCandidatesCSV = async () => {
+        try {
+            const res = await api.get('/admin/export/candidates', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `candidates_export_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (e) {
+            console.error("Export candidates failed:", e);
+            alert("Failed to export candidates CSV.");
+        }
+    };
+
+    const handleExportApplicationsCSV = async () => {
+        try {
+            const res = await api.get('/admin/export/applications', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `applications_pipeline_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (e) {
+            console.error("Export applications failed:", e);
+            alert("Failed to export applications CSV.");
+        }
+    };
+
+    const handleBulkStatusUpdate = async (status) => {
+        if (selectedAppIds.length === 0) return;
+        setBulkUpdating(true);
+        try {
+            const res = await api.post('/admin/applications/bulk-status', {
+                application_ids: selectedAppIds,
+                status: status
+            });
+            setMessage({ text: res.data.message || `Updated ${selectedAppIds.length} applications!`, type: 'success' });
+            setSelectedAppIds([]);
+            fetchApplications();
+        } catch (e) {
+            console.error("Bulk status update failed:", e);
+            setMessage({ text: 'Failed to perform bulk status update.', type: 'error' });
+        } finally {
+            setBulkUpdating(false);
+        }
+    };
+
+    const handleBulkAssignModalOpen = () => {
+        if (selectedCandidateIds.length === 0) return;
+        setAssignModal({
+            open: true,
+            type: 'standard',
+            candidate: { name: `${selectedCandidateIds.length} Selected Candidates`, isBulk: true, ids: selectedCandidateIds }
+        });
+    };
+
+    // ─── Bulk Email Handlers ───
+    const EMAIL_TEMPLATES = [
+        {
+            id: 'interview_invite',
+            name: '📅 Interview Invitation',
+            subject: 'Invitation to Technical & Behavioral Interview Round',
+            body: `Dear {name},\n\nWe are impressed with your profile and application. We would like to invite you for the next interview round.\n\nPlease log in to your Placement AI dashboard to review the schedule and complete your preparatory assessments.\n\nBest regards,\nCampus Recruitment Team`
+        },
+        {
+            id: 'shortlist_congrats',
+            name: '🎉 Shortlisting Notice',
+            subject: 'Congratulations! Your Application has been Shortlisted',
+            body: `Dear {name},\n\nCongratulations! Your application has successfully passed our initial screening and ATS evaluation.\n\nOur hiring panel is currently finalizing the interview lineup. Keep an eye on your inbox and candidate portal for the date and details.\n\nBest regards,\nHR Recruitment Team`
+        },
+        {
+            id: 'doc_reminder',
+            name: '📑 Document & Resume Verification',
+            subject: 'Action Required: Submit Your Resume & Profile Details',
+            body: `Dear {name},\n\nThis is a quick reminder from the Placement Cell to ensure your latest ATS-compliant resume and profile information are up-to-date on the platform.\n\nPlease visit your dashboard to submit any pending details before the upcoming recruitment drive deadline.\n\nBest regards,\nPlacement Cell Administration`
+        },
+        {
+            id: 'drive_update',
+            name: '📢 Placement Drive Announcement',
+            subject: 'Important Update Regarding Upcoming Campus Placement Drive',
+            body: `Dear {name},\n\nWe have scheduled upcoming campus recruitment drives with leading technology partners. Please ensure you practice mock interviews and coding labs on Placement AI to maximize your readiness.\n\nGood luck with your preparation!\n\nBest regards,\nHR & Placement Cell`
+        }
+    ];
+
+    const handleOpenCandidateBulkEmail = () => {
+        if (selectedCandidateIds.length === 0) return;
+        setEmailModal({
+            open: true,
+            candidateIds: selectedCandidateIds,
+            recipientCount: selectedCandidateIds.length,
+            subject: EMAIL_TEMPLATES[0].subject,
+            body: EMAIL_TEMPLATES[0].body,
+            template: EMAIL_TEMPLATES[0].id
+        });
+    };
+
+    const handleOpenApplicationBulkEmail = () => {
+        if (selectedAppIds.length === 0) return;
+        const targetCandidateIds = applicationsList
+            .filter(app => selectedAppIds.includes(app._id))
+            .map(app => app.user_id)
+            .filter(Boolean);
+
+        const uniqueCandidateIds = [...new Set(targetCandidateIds)];
+        setEmailModal({
+            open: true,
+            candidateIds: uniqueCandidateIds,
+            recipientCount: uniqueCandidateIds.length,
+            subject: EMAIL_TEMPLATES[1].subject,
+            body: EMAIL_TEMPLATES[1].body,
+            template: EMAIL_TEMPLATES[1].id
+        });
+    };
+
+    const handleSendBulkEmailSubmit = async (e) => {
+        e?.preventDefault();
+        if (!emailModal.subject.trim() || !emailModal.body.trim()) {
+            alert('Please enter both an email subject and body.');
+            return;
+        }
+
+        setSendingEmail(true);
+        try {
+            const res = await api.post('/admin/bulk-email', {
+                candidate_ids: emailModal.candidateIds,
+                subject: emailModal.subject,
+                body: emailModal.body
+            });
+            setMessage({ text: res.data.message || `Successfully sent email to ${emailModal.recipientCount} candidates!`, type: 'success' });
+            setEmailModal({ open: false, candidateIds: [], recipientCount: 0, subject: '', body: '', template: 'custom' });
+        } catch (err) {
+            console.error("Bulk email error:", err);
+            setMessage({ text: err.response?.data?.message || 'Failed to dispatch bulk email.', type: 'error' });
+        } finally {
+            setSendingEmail(false);
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -323,7 +543,7 @@ const HRDashboard = () => {
     const analyzedCount = candidates.filter(c => c.has_resume).length;
     const totalInterviews = submissions.interviews.length + submissions.coding_submissions.length;
     const placementsCount = applicationsList.filter(a => a.status === 'selected').length;
-    const topCandidate = candidates.length > 0 ? [...candidates].filter(c => c.has_resume).sort((a, b) => (b.ats_score || 0) - (a.ats_score || 0))[0] : null;
+    const topCandidates = candidates.length > 0 ? [...candidates].filter(c => c.has_resume).sort((a, b) => (b.ats_score || 0) - (a.ats_score || 0)).slice(0, 3) : [];
 
     const totalApps = applicationsList.length;
     const shortlistedAppsCount = applicationsList.filter(a => a.status === 'shortlisted').length;
@@ -349,86 +569,91 @@ const HRDashboard = () => {
     });
 
     return (
-        <div className="flex min-h-screen bg-[#060B16] text-[#F8FAFC] font-sans antialiased overflow-x-hidden">
+        <div className="flex min-h-screen bg-slate-50 dark:bg-[#060B16] text-slate-900 dark:text-[#F8FAFC] font-sans antialiased overflow-x-hidden">
 
-            {/* 1. SIDEBAR REDESIGN */}
-            <aside className={`flex flex-col bg-[#0A1120] border-r border-[#1E293B] transition-all duration-300 z-50 ${sidebarCollapsed ? 'w-20' : 'w-72'}`}>
+            {/* 1. SIDEBAR REDESIGN WITH SMOOTH SCROLLING ANIMATIONS */}
+            <motion.aside
+                initial={false}
+                animate={{ width: sidebarCollapsed ? 80 : 288 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="flex flex-col bg-white dark:bg-[#0A1120] border-r border-slate-200 dark:border-[#1E293B] z-50 sticky top-0 h-screen"
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-[#1E293B]">
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#1E293B]">
                     <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center text-slate-950 font-black text-sm shrink-0 shadow-lg shadow-cyan-500/20">
+                        <motion.div
+                            whileHover={{ rotate: 90 }}
+                            transition={{ duration: 0.3 }}
+                            className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center text-slate-950 font-black text-sm shrink-0 shadow-lg shadow-cyan-500/20 cursor-pointer"
+                        >
                             ◈
-                        </div>
+                        </motion.div>
                         {!sidebarCollapsed && (
-                            <span className="font-black text-lg tracking-wider bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent uppercase whitespace-nowrap">
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="font-black text-lg tracking-wider text-slate-900 dark:bg-gradient-to-r dark:from-white dark:via-slate-100 dark:to-slate-400 dark:bg-clip-text dark:text-transparent uppercase whitespace-nowrap"
+                            >
                                 Placement AI
-                            </span>
+                            </motion.span>
                         )}
                     </div>
                     <button
                         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                        className="p-1.5 rounded-lg hover:bg-white/5 border border-white/5 transition-all hidden lg:block"
+                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 transition-all hidden lg:block"
                         title="Collapse Sidebar"
                     >
-                        {sidebarCollapsed ? <ChevronRight className="w-4 h-4 text-slate-400" /> : <ChevronLeft className="w-4 h-4 text-slate-400" />}
+                        {sidebarCollapsed ? <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-400" /> : <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" />}
                     </button>
                 </div>
-                {/* Navigation Menu */}
-                <div className="flex-grow py-6 px-4 space-y-6 overflow-y-auto">
+                {/* Navigation Menu with Smooth Custom Scrollbar */}
+                <div className="flex-grow py-6 px-4 space-y-6 overflow-y-auto custom-scrollbar scroll-smooth">
                     {/* Main Section */}
                     <div>
                         {!sidebarCollapsed && (
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] px-3 mb-2">MAIN</p>
                         )}
                         <nav className="space-y-1">
-                            <button
-                                onClick={() => { setActiveTab('dashboard'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'dashboard' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <LayoutDashboard className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Dashboard</span>}
-                                {activeTab === 'dashboard' && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r" />}
-                            </button>
-                            <button
-                                onClick={() => { setActiveTab('candidates'); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'candidates' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <Users className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Candidates</span>}
-                                {activeTab === 'candidates' && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r" />}
-                            </button>
-                            <button
-                                onClick={() => { setActiveTab('jobs'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'jobs' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <Briefcase className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Job Posts</span>}
-                                {activeTab === 'jobs' && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r" />}
-                            </button>
-                            <button
-                                onClick={() => { setActiveTab('applications'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'applications' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <FileText className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Applications</span>}
-                                {activeTab === 'applications' && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r" />}
-                            </button>
-                            <button
-                                onClick={() => { setActiveTab('interviews'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'interviews' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <ClipboardList className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Interviews</span>}
-                                {activeTab === 'interviews' && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r" />}
-                            </button>
-                            <button
-                                onClick={() => { setActiveTab('placements'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'placements' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <Award className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Placements</span>}
-                                {activeTab === 'placements' && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r" />}
-                            </button>
+                            {[
+                                { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, action: () => { setActiveTab('dashboard'); setSelectedCandidate(null); } },
+                                { key: 'candidates', label: 'Candidates', icon: Users, action: () => { setActiveTab('candidates'); } },
+                                { key: 'jobs', label: 'Job Posts', icon: Briefcase, action: () => { setActiveTab('jobs'); setSelectedCandidate(null); } },
+                                { key: 'applications', label: 'Applications', icon: FileText, action: () => { setActiveTab('applications'); setSelectedCandidate(null); } },
+                                { key: 'interviews', label: 'Interviews', icon: ClipboardList, action: () => { setActiveTab('interviews'); setSelectedCandidate(null); } },
+                                { key: 'placements', label: 'Placements', icon: Award, action: () => { setActiveTab('placements'); setSelectedCandidate(null); } },
+                            ].map(item => {
+                                const Icon = item.icon;
+                                const isActive = activeTab === item.key;
+                                return (
+                                    <motion.button
+                                        key={item.key}
+                                        onClick={item.action}
+                                        whileHover={{ x: 4 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className={`relative w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-bold transition-all text-left ${
+                                            isActive
+                                                ? 'text-cyan-500 dark:text-cyan-400 font-black'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                                        }`}
+                                    >
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeTabPill"
+                                                className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/30 rounded-xl"
+                                                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                            />
+                                        )}
+                                        <Icon className={`w-5 h-5 shrink-0 relative z-10 ${isActive ? 'text-cyan-400' : ''}`} />
+                                        {!sidebarCollapsed && <span className="text-xs relative z-10">{item.label}</span>}
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeTabDot"
+                                                className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r z-10"
+                                            />
+                                        )}
+                                    </motion.button>
+                                );
+                            })}
                         </nav>
                     </div>
 
@@ -438,27 +663,43 @@ const HRDashboard = () => {
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] px-3 mb-2">AI & ANALYTICS</p>
                         )}
                         <nav className="space-y-1">
-                            <button
-                                onClick={() => { setActiveTab('jobs'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'ai-matching' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <Sparkles className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">AI Matching</span>}
-                            </button>
-                            <button
-                                onClick={() => { setActiveTab('dashboard'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'analytics' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <BarChart3 className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Analytics</span>}
-                            </button>
-                            <button
-                                onClick={() => { setActiveTab('submissions'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'reports' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <BookOpen className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Reports</span>}
-                            </button>
+                            {[
+                                { key: 'ai-interviews', label: 'AI Voice Interviews', icon: Sparkles, color: 'text-cyan-400', action: () => { setActiveTab('ai-interviews'); setSelectedCandidate(null); fetchAiSessions(); } },
+                                { key: 'hr-analytics', label: 'Analytics', icon: BarChart3, action: () => { setActiveTab('hr-analytics'); setSelectedCandidate(null); } },
+                                { key: 'submissions', label: 'Reports', icon: BookOpen, action: () => { setActiveTab('submissions'); setSelectedCandidate(null); } },
+                            ].map(item => {
+                                const Icon = item.icon;
+                                const isActive = activeTab === item.key;
+                                return (
+                                    <motion.button
+                                        key={item.key}
+                                        onClick={item.action}
+                                        whileHover={{ x: 4 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className={`relative w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-bold transition-all text-left ${
+                                            isActive
+                                                ? 'text-cyan-500 dark:text-cyan-400 font-black'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                                        }`}
+                                    >
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeTabPill"
+                                                className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/30 rounded-xl"
+                                                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                            />
+                                        )}
+                                        <Icon className={`w-5 h-5 shrink-0 relative z-10 ${item.color || (isActive ? 'text-cyan-400' : '')}`} />
+                                        {!sidebarCollapsed && <span className="text-xs relative z-10">{item.label}</span>}
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeTabDot"
+                                                className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r z-10"
+                                            />
+                                        )}
+                                    </motion.button>
+                                );
+                            })}
                         </nav>
                     </div>
 
@@ -468,53 +709,78 @@ const HRDashboard = () => {
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] px-3 mb-2">SYSTEM</p>
                         )}
                         <nav className="space-y-1">
-                            <button
+                            <motion.button
                                 onClick={() => { setActiveTab('settings'); setSelectedCandidate(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative ${activeTab === 'settings' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                whileHover={{ x: 4 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={`relative w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-bold transition-all text-left ${
+                                    activeTab === 'settings'
+                                        ? 'text-cyan-500 dark:text-cyan-400 font-black'
+                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                                }`}
                             >
-                                <Settings className="w-5 h-5 shrink-0" />
-                                {!sidebarCollapsed && <span className="text-xs">Settings</span>}
-                                {activeTab === 'settings' && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r" />}
-                            </button>
+                                {activeTab === 'settings' && (
+                                    <motion.div
+                                        layoutId="activeTabPill"
+                                        className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/30 rounded-xl"
+                                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                    />
+                                )}
+                                <Settings className="w-5 h-5 shrink-0 relative z-10" />
+                                {!sidebarCollapsed && <span className="text-xs relative z-10">Settings</span>}
+                                {activeTab === 'settings' && (
+                                    <motion.div
+                                        layoutId="activeTabDot"
+                                        className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r z-10"
+                                    />
+                                )}
+                            </motion.button>
                         </nav>
                     </div>
                 </div>
 
                 {/* Sidebar Footer */}
-                <div className="p-4 border-t border-[#1E293B] bg-slate-900/40">
+                <div className="p-4 border-t border-slate-200 dark:border-[#1E293B] bg-slate-50 dark:bg-slate-900/40">
                     <div className="flex items-center justify-between gap-3 overflow-hidden">
                         <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0 shadow-md">
                                 {adminInfo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                             </div>
                             {!sidebarCollapsed && (
-                                <div className="flex-grow min-w-0">
-                                    <p className="text-xs font-black text-white truncate">{adminInfo.name}</p>
-                                    <p className="text-[10px] text-slate-400 truncate">HR Administrator</p>
-                                </div>
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex-grow min-w-0"
+                                >
+                                    <p className="text-xs font-black text-slate-900 dark:text-white truncate">{adminInfo.name}</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">HR Administrator</p>
+                                </motion.div>
                             )}
                         </div>
                         {!sidebarCollapsed && (
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                                 onClick={handleLogout}
-                                className="p-1.5 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all text-slate-400 hover:text-red-400 shrink-0"
+                                className="p-1.5 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 shrink-0"
                                 title="Log Out"
                             >
                                 <LogOut className="w-4 h-4" />
-                            </button>
+                            </motion.button>
                         )}
                     </div>
                 </div>
-            </aside>
+            </motion.aside>
+
 
             {/* Main Application Area */}
             <div className="flex-grow flex flex-col min-w-0">
 
                 {/* 2. TOP NAVBAR */}
-                <header className="sticky top-0 bg-[#060B16]/80 backdrop-blur-xl border-b border-[#1E293B] py-4 px-8 flex items-center justify-between z-40">
+                <header className="sticky top-0 bg-white/80 dark:bg-[#060B16]/80 backdrop-blur-xl border-b border-slate-200 dark:border-[#1E293B] py-4 px-8 flex items-center justify-between z-40">
                     <div className="flex items-center gap-4">
                         <div>
-                            <h2 className="text-xl font-bold uppercase tracking-tight text-white">
+                            <h2 className="text-xl font-bold uppercase tracking-tight text-slate-900 dark:text-white">
                                 {activeTab === 'dashboard' ? 'Overview' :
                                     activeTab === 'candidates' ? 'Candidate Directory' :
                                         activeTab === 'jobs' ? 'Job Posting specs' :
@@ -534,18 +800,18 @@ const HRDashboard = () => {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-slate-900/60 border border-[#1E293B] rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-cyan-500/40 text-white min-w-[280px] placeholder:text-slate-600 transition-all"
+                                className="bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-[#1E293B] rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-cyan-500/40 text-slate-900 dark:text-white min-w-[280px] placeholder:text-slate-500 dark:placeholder:text-slate-600 transition-all"
                                 placeholder="Search candidates, skills, keywords..."
                             />
                         </form>
 
-                        <div className="w-px h-6 bg-[#1E293B] hidden md:block" />
+                        <div className="w-px h-6 bg-slate-200 dark:bg-[#1E293B] hidden md:block" />
 
                         {/* Notifications Bell Dropdown */}
                         <div className="relative">
                             <button
                                 onClick={() => setNotificationsOpen(!notificationsOpen)}
-                                className="p-2 rounded-xl bg-slate-900/60 border border-[#1E293B] hover:border-cyan-500/30 text-slate-400 hover:text-white transition-all relative"
+                                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-[#1E293B] hover:border-cyan-500/30 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all relative"
                             >
                                 <Bell className="w-4 h-4" />
                                 <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-cyan-400 ring-2 ring-slate-950" />
@@ -660,44 +926,42 @@ const HRDashboard = () => {
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    {/* Left Column: Top Candidate */}
-                                    {topCandidate ? (
-                                        <div className="bg-[#060B16]/50 border border-[#1E293B] rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-[#94A3B8] bg-white/5 px-2 py-0.5 rounded border border-white/5">Top Candidate Match</span>
-                                                    <h4 className="text-lg font-black text-white mt-2">{topCandidate.name}</h4>
-                                                    <p className="text-xs text-slate-500 mt-0.5">{topCandidate.branch || 'Engineering'} candidate pool</p>
-                                                </div>
-                                                <div className="space-y-1.5 text-xs text-slate-400">
-                                                    {topCandidate.skills && topCandidate.skills.slice(0, 3).map((skill, idx) => (
-                                                        <div key={skill} className="flex items-center gap-2">
-                                                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                                            <span>{skill} matched ({idx === 0 ? 'Highly proficient' : 'Competent'})</span>
+                                    {/* Left Column: Top Candidate Matches */}
+                                    <div className="bg-[#060B16]/50 border border-[#1E293B] rounded-2xl p-6 space-y-4">
+                                        <div>
+                                            <span className="text-[8px] font-black uppercase tracking-widest text-[#94A3B8] bg-white/5 px-2 py-0.5 rounded border border-white/5">Top Candidate Matches</span>
+                                            <h4 className="text-sm font-black text-white mt-2">Best AI Recommendations</h4>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {topCandidates.map((cand, idx) => (
+                                                <div key={cand.id} className="bg-[#0F1728]/60 border border-white/5 hover:border-cyan-500/20 rounded-xl p-4 flex items-center justify-between gap-4 transition-all">
+                                                    <div className="space-y-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-[10px] font-black text-cyan-400`}>
+                                                                #{idx + 1}
+                                                            </span>
+                                                            <h5 className="text-xs font-bold text-white truncate">{cand.name}</h5>
                                                         </div>
-                                                    ))}
-                                                    {(!topCandidate.skills || topCandidate.skills.length === 0) && (
-                                                        <p className="text-slate-500 italic">No skills extracted from resume</p>
-                                                    )}
+                                                        <p className="text-[10px] text-slate-500 truncate">{cand.branch || 'Engineering'} • {cand.skills?.slice(0, 2).join(', ') || 'No skills'}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <div className="px-2 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded text-[10px] font-bold text-cyan-400">
+                                                            {cand.ats_score || 0}% ATS
+                                                        </div>
+                                                        <button
+                                                            onClick={() => { setSelectedCandidate(cand); setActiveTab('candidates'); }}
+                                                            className="p-1 rounded-lg bg-white/5 hover:bg-cyan-500 hover:text-slate-950 text-slate-400 transition-all"
+                                                        >
+                                                            <ChevronRight className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => { setSelectedCandidate(topCandidate); setActiveTab('candidates'); }}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-all select-none"
-                                                >
-                                                    View Candidate →
-                                                </button>
-                                            </div>
-                                            <div className="shrink-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-cyan-500/10 to-indigo-500/5 rounded-2xl border border-cyan-500/20 w-36 h-36">
-                                                <span className="text-3xl font-black text-cyan-400 leading-none">{topCandidate.ats_score || 0}%</span>
-                                                <span className="text-[9px] uppercase font-black tracking-widest text-slate-400 mt-2">ATS INDEX</span>
-                                            </div>
+                                            ))}
+                                            {topCandidates.length === 0 && (
+                                                <p className="text-slate-500 text-xs italic">No candidates with parsed resumes found.</p>
+                                            )}
                                         </div>
-                                    ) : (
-                                        <div className="bg-[#060B16]/50 border border-[#1E293B] rounded-2xl p-6 flex flex-col justify-center items-center text-slate-500 text-xs font-semibold min-h-[160px]">
-                                            <Sparkles className="w-8 h-8 text-slate-600 mb-2" />
-                                            <span>No candidates with parsed resumes found.</span>
-                                        </div>
-                                    )}
+                                    </div>
                                     {/* Right Column: Hiring Risks & Pool Analysis */}
                                     <div className="bg-[#060B16]/50 border border-[#1E293B] rounded-2xl p-6 space-y-4">
                                         <div>
@@ -923,10 +1187,18 @@ const HRDashboard = () => {
                             {/* Toolbar (Search and Filters) */}
                             {!selectedCandidate && (
                                 <>
-                                    <div className="bg-gradient-to-r from-slate-900 to-slate-950 p-8 rounded-[2rem] border border-[#1E293B] flex justify-between items-center relative overflow-hidden">
+                                    <div className="bg-gradient-to-r from-slate-900 to-slate-950 p-8 rounded-[2rem] border border-[#1E293B] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
                                         <div>
                                             <h1 className="text-3xl font-black text-white tracking-tight uppercase">Candidates</h1>
                                             <p className="text-slate-400 text-sm mt-1">{filteredCandidates.length} total candidates in directory</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={handleExportCandidatesCSV}
+                                                className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-500/30 text-xs font-black uppercase tracking-wider text-slate-300 hover:text-white flex items-center gap-2 transition-all"
+                                            >
+                                                <Download className="w-4 h-4 text-cyan-400" /> Export CSV
+                                            </button>
                                         </div>
                                     </div>
 
@@ -983,12 +1255,31 @@ const HRDashboard = () => {
                             {/* Main directory split view */}
                             {!selectedCandidate ? (
                                 <div className="grid grid-cols-1 gap-8 items-start">
+                                    <BulkActionBar 
+                                        selectedCount={selectedCandidateIds.length} 
+                                        totalCount={filteredCandidates.length}
+                                        onExport={() => handleBulkExport(selectedCandidateIds)}
+                                    />
                                     {/* Left/Main directory table */}
                                     <div className="bg-[#0F1728] border border-[#1E293B] rounded-[2rem] overflow-hidden">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left border-collapse">
                                                 <thead>
                                                     <tr className="border-b border-[#1E293B] text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                                                        <th className="px-6 py-4 w-12">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={filteredCandidates.length > 0 && selectedCandidateIds.length === filteredCandidates.length}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedCandidateIds(filteredCandidates.map(c => c.id || c._id));
+                                                                    } else {
+                                                                        setSelectedCandidateIds([]);
+                                                                    }
+                                                                }}
+                                                                className="w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900"
+                                                            />
+                                                        </th>
                                                         <th className="px-6 py-4">Identity</th>
                                                         <th className="px-6 py-4">Branch</th>
                                                         <th className="px-6 py-4">Resume</th>
@@ -999,13 +1290,29 @@ const HRDashboard = () => {
                                                 </thead>
                                                 <tbody className="divide-y divide-[#1E293B]">
                                                     {filteredCandidates.length > 0 ? (
-                                                        filteredCandidates.map(cand => (
+                                                        filteredCandidates.map(cand => {
+                                                            const candId = cand.id || cand._id;
+                                                            const isChecked = selectedCandidateIds.includes(candId);
+                                                            return (
                                                             <tr
                                                                 key={cand.id}
-                                                                onClick={() => setSelectedCandidate(cand)}
                                                                 className={`hover:bg-white/[0.02] transition-all cursor-pointer ${selectedCandidate?.id === cand.id ? 'bg-cyan-500/[0.02] border-l-2 border-l-cyan-500' : ''}`}
                                                             >
-                                                                <td className="px-6 py-4 flex items-center gap-3">
+                                                                <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isChecked}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.checked) {
+                                                                                setSelectedCandidateIds(prev => [...prev, candId]);
+                                                                            } else {
+                                                                                setSelectedCandidateIds(prev => prev.filter(id => id !== candId));
+                                                                            }
+                                                                        }}
+                                                                        className="w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900"
+                                                                    />
+                                                                </td>
+                                                                <td className="px-6 py-4 flex items-center gap-3" onClick={() => setSelectedCandidate(cand)}>
                                                                     <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center font-bold text-xs text-cyan-400 border border-white/5">
                                                                         {cand.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                                                                     </div>
@@ -1014,16 +1321,16 @@ const HRDashboard = () => {
                                                                         <div className="text-[10px] text-slate-500 mt-0.5">{cand.email}</div>
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-xs font-bold text-slate-400">{cand.branch}</td>
-                                                                <td className="px-6 py-4">
+                                                                <td className="px-6 py-4 text-xs font-bold text-slate-400" onClick={() => setSelectedCandidate(cand)}>{cand.branch}</td>
+                                                                <td className="px-6 py-4" onClick={() => setSelectedCandidate(cand)}>
                                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${cand.has_resume ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
                                                                         {cand.has_resume ? 'Analyzed' : 'No Resume'}
                                                                     </span>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-xs font-black text-cyan-400">
+                                                                <td className="px-6 py-4 text-xs font-black text-cyan-400" onClick={() => setSelectedCandidate(cand)}>
                                                                     {cand.has_resume ? `${cand.ats_score}/100` : 'N/A'}
                                                                 </td>
-                                                                <td className="px-6 py-4">
+                                                                <td className="px-6 py-4" onClick={() => setSelectedCandidate(cand)}>
                                                                     <div className="flex flex-wrap gap-1 max-w-[320px]">
                                                                         {cand.skills?.slice(0, 4).map(skill => (
                                                                             <span key={skill} className="text-[7.5px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-slate-400">
@@ -1035,14 +1342,15 @@ const HRDashboard = () => {
                                                                         )}
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-right">
+                                                                <td className="px-6 py-4 text-right" onClick={() => setSelectedCandidate(cand)}>
                                                                     <ChevronRight className="w-4 h-4 text-slate-500 ml-auto" />
                                                                 </td>
                                                             </tr>
-                                                        ))
+                                                            );
+                                                        })
                                                     ) : (
                                                         <tr>
-                                                            <td colSpan="6" className="text-center py-12 text-slate-500 text-xs font-semibold">No candidates found matching the active filters.</td>
+                                                            <td colSpan="7" className="text-center py-12 text-slate-500 text-xs font-semibold">No candidates found matching the active filters.</td>
                                                         </tr>
                                                     )}
                                                 </tbody>
@@ -1071,6 +1379,14 @@ const HRDashboard = () => {
                                                 <div>
                                                     <h2 className="text-2xl font-black text-white">{selectedCandidate.name}</h2>
                                                     <p className="text-xs text-slate-400 mt-1">{selectedCandidate.email} | Branch: {selectedCandidate.branch}</p>
+                                                    {selectedCandidate.has_resume && (
+                                                        <button
+                                                            onClick={() => handlePreviewResume(selectedCandidate.id)}
+                                                            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 transition-all select-none cursor-pointer"
+                                                        >
+                                                            <Eye className="w-3.5 h-3.5" /> Preview Resume
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-end">
@@ -1349,9 +1665,19 @@ const HRDashboard = () => {
                     {/* TAB: APPLICATIONS */}
                     {activeTab === 'applications' && (
                         <div className="space-y-8">
-                            <div className="bg-gradient-to-r from-slate-900 to-slate-950 p-8 rounded-[2rem] border border-[#1E293B] relative overflow-hidden">
-                                <h1 className="text-3xl font-black text-white tracking-tight uppercase">Application tracking</h1>
-                                <p className="text-slate-400 text-sm mt-1">Review applicant scores and update pipeline stages in real time.</p>
+                            <div className="bg-gradient-to-r from-slate-900 to-slate-950 p-8 rounded-[2rem] border border-[#1E293B] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+                                <div>
+                                    <h1 className="text-3xl font-black text-white tracking-tight uppercase">Application tracking</h1>
+                                    <p className="text-slate-400 text-sm mt-1">Review applicant scores, perform batch status updates, and export pipeline logs.</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={handleExportApplicationsCSV}
+                                        className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-500/30 text-xs font-black uppercase tracking-wider text-slate-300 hover:text-white flex items-center gap-2 transition-all"
+                                    >
+                                        <Download className="w-4 h-4 text-cyan-400" /> Export Pipeline CSV
+                                    </button>
+                                </div>
                             </div>
 
                             {/* KPI Metrics Row */}
@@ -1401,6 +1727,24 @@ const HRDashboard = () => {
                                     <table className="w-full text-left border-collapse">
                                         <thead>
                                             <tr className="border-b border-[#1E293B] text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                                                <th className="px-6 py-4 w-12">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={
+                                                            applicationsList.filter(a => applicationFilter === 'All' || a.status === applicationFilter).length > 0 &&
+                                                            selectedAppIds.length === applicationsList.filter(a => applicationFilter === 'All' || a.status === applicationFilter).length
+                                                        }
+                                                        onChange={(e) => {
+                                                            const filteredApps = applicationsList.filter(a => applicationFilter === 'All' || a.status === applicationFilter);
+                                                            if (e.target.checked) {
+                                                                setSelectedAppIds(filteredApps.map(a => a._id));
+                                                            } else {
+                                                                setSelectedAppIds([]);
+                                                            }
+                                                        }}
+                                                        className="w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900"
+                                                    />
+                                                </th>
                                                 <th className="px-6 py-4">Candidate</th>
                                                 <th className="px-6 py-4">Job Opening</th>
                                                 <th className="px-6 py-4">Applied Date</th>
@@ -1412,8 +1756,24 @@ const HRDashboard = () => {
                                         <tbody className="divide-y divide-[#1E293B]">
                                             {applicationsList
                                                 .filter(a => applicationFilter === 'All' || a.status === applicationFilter)
-                                                .map(app => (
+                                                .map(app => {
+                                                    const isChecked = selectedAppIds.includes(app._id);
+                                                    return (
                                                     <tr key={app._id} className="hover:bg-white/[0.01] transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isChecked}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedAppIds(prev => [...prev, app._id]);
+                                                                    } else {
+                                                                        setSelectedAppIds(prev => prev.filter(id => id !== app._id));
+                                                                    }
+                                                                }}
+                                                                className="w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900"
+                                                            />
+                                                        </td>
                                                         <td className="px-6 py-4">
                                                             <div className="text-xs font-bold text-white">{app.candidate_name}</div>
                                                             <div className="text-[10px] text-slate-500 mt-0.5">{app.candidate_email}</div>
@@ -1453,10 +1813,11 @@ const HRDashboard = () => {
                                                             </select>
                                                         </td>
                                                     </tr>
-                                                ))}
+                                                    );
+                                                })}
                                             {applicationsList.length === 0 && (
                                                 <tr>
-                                                    <td colSpan="6" className="text-center py-12 text-slate-500 text-xs font-semibold">No candidate applications found in the database.</td>
+                                                    <td colSpan="7" className="text-center py-12 text-slate-500 text-xs font-semibold">No candidate applications found in the database.</td>
                                                 </tr>
                                             )}
                                         </tbody>
@@ -1760,6 +2121,199 @@ const HRDashboard = () => {
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {/* TAB: PLACEMENTS */}
+                    {activeTab === 'placements' && (
+                        <div className="space-y-8">
+                            <div className="bg-gradient-to-r from-indigo-950 to-slate-950 p-8 rounded-[2rem] border border-[#1E293B] relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-12 opacity-[0.02] pointer-events-none">
+                                    <Award className="w-64 h-64" />
+                                </div>
+                                <h1 className="text-3xl font-black text-white tracking-tight uppercase">Placements Dashboard</h1>
+                                <p className="text-slate-400 text-sm mt-1">View candidates who have been successfully placed and selected.</p>
+                            </div>
+
+                            {/* KPI Metrics Row */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-[#0F1728] border border-[#1E293B] rounded-2xl p-5">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Placed Candidates</p>
+                                    <p className="text-3xl font-black text-emerald-400 mt-1">{placementsCount}</p>
+                                </div>
+                                <div className="bg-[#0F1728] border border-[#1E293B] rounded-2xl p-5">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Placement Rate</p>
+                                    <p className="text-3xl font-black text-cyan-400 mt-1">{applicationsList.length ? ((placementsCount / applicationsList.length) * 100).toFixed(1) : 0}%</p>
+                                </div>
+                                <div className="bg-[#0F1728] border border-[#1E293B] rounded-2xl p-5">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Total Applicants</p>
+                                    <p className="text-3xl font-black text-white mt-1">{applicationsList.length}</p>
+                                </div>
+                            </div>
+
+                            {/* Placements List Table */}
+                            <div className="bg-[#0F1728] border border-[#1E293B] rounded-[2rem] overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-[#1E293B] text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                                                <th className="px-6 py-4">Candidate</th>
+                                                <th className="px-6 py-4">Job Role Placed</th>
+                                                <th className="px-6 py-4">Company</th>
+                                                <th className="px-6 py-4">ATS Match Score</th>
+                                                <th className="px-6 py-4 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#1E293B]">
+                                            {applicationsList
+                                                .filter(a => a.status === 'selected')
+                                                .map(app => (
+                                                    <tr key={app._id} className="hover:bg-white/[0.01] transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <div className="text-xs font-bold text-white">{app.candidate_name}</div>
+                                                            <div className="text-[10px] text-slate-500 mt-0.5">{app.candidate_email}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-xs font-bold text-slate-300">
+                                                            {app.job_title}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-xs text-slate-400">
+                                                            {app.company}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="text-xs font-black text-cyan-400">{app.ats_score || 0}/100</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const cand = candidates.find(c => c.email === app.candidate_email || c.name === app.candidate_name);
+                                                                    if (cand) {
+                                                                        setSelectedCandidate(cand);
+                                                                        setActiveTab('candidates');
+                                                                    } else {
+                                                                        alert("Candidate details not found in directory.");
+                                                                    }
+                                                                }}
+                                                                className="px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                                                            >
+                                                                View Profile
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            {applicationsList.filter(a => a.status === 'selected').length === 0 && (
+                                                <tr>
+                                                    <td colSpan="5" className="text-center py-12 text-slate-500 text-xs font-semibold">No candidates have been marked as placed yet.</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: AI REAL-TIME VOICE INTERVIEWS */}
+                    {activeTab === 'ai-interviews' && (
+                        <div className="space-y-8">
+                            {/* Header */}
+                            <div className="bg-gradient-to-r from-cyan-950 via-slate-950 to-blue-950 p-8 rounded-[2rem] border border-[#1E293B] flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+                                <div className="space-y-2 relative z-10">
+                                    <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-black uppercase tracking-widest">
+                                        <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" /> Real-Time Voice Sessions
+                                    </span>
+                                    <h1 className="text-3xl font-black text-white tracking-tight uppercase">AI Voice Interview Pipeline</h1>
+                                    <p className="text-slate-400 text-sm font-medium">Review real-time AI candidate voice/video sessions, synced transcripts, fit summaries, and signal buckets.</p>
+                                </div>
+                                <button
+                                    onClick={fetchAiSessions}
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-white/5 border border-white/10 hover:border-cyan-500/30 text-white transition-all select-none hover:bg-cyan-500/5 cursor-pointer"
+                                >
+                                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Sessions
+                                </button>
+                            </div>
+
+                            {/* KPI Cards Row */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                <div className="bg-[#0F1728] border border-[#1E293B] rounded-2xl p-5">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Total AI Sessions</p>
+                                    <p className="text-3xl font-black text-white mt-1">{aiSessions.length}</p>
+                                </div>
+                                <div className="bg-[#0F1728] border border-[#1E293B] rounded-2xl p-5">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Strong Fits</p>
+                                    <p className="text-3xl font-black text-emerald-400 mt-1">{aiSessions.filter(s => s.signal_bucket === 'strong').length}</p>
+                                </div>
+                                <div className="bg-[#0F1728] border border-[#1E293B] rounded-2xl p-5">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Worth A Look</p>
+                                    <p className="text-3xl font-black text-amber-400 mt-1">{aiSessions.filter(s => s.signal_bucket === 'worth_a_look').length}</p>
+                                </div>
+                                <div className="bg-[#0F1728] border border-[#1E293B] rounded-2xl p-5">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Needs Improvement</p>
+                                    <p className="text-3xl font-black text-rose-400 mt-1">{aiSessions.filter(s => s.signal_bucket === 'weak').length}</p>
+                                </div>
+                            </div>
+
+                            {/* Sessions Table */}
+                            <div className="bg-[#0F1728] border border-[#1E293B] rounded-[2rem] overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-[#1E293B] text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                                                <th className="px-6 py-4">Candidate</th>
+                                                <th className="px-6 py-4">Role & Level</th>
+                                                <th className="px-6 py-4">AI Fit Summary</th>
+                                                <th className="px-6 py-4">Signal Bucket</th>
+                                                <th className="px-6 py-4">Duration</th>
+                                                <th className="px-6 py-4 text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#1E293B]">
+                                            {aiSessions.map(sess => (
+                                                <tr key={sess.id} className="hover:bg-white/[0.01] transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-xs font-bold text-white">{sess.candidate_name}</div>
+                                                        <div className="text-[10px] text-slate-500 mt-0.5">{sess.candidate_email}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-xs font-bold text-slate-200">{sess.role_context}</div>
+                                                        <div className="text-[10px] text-cyan-400 font-mono mt-0.5">{sess.difficulty}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 max-w-xs">
+                                                        <p className="text-xs text-slate-300 truncate">{sess.summary_text}</p>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${sess.signal_bucket === 'strong' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : (sess.signal_bucket === 'weak' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400')}`}>
+                                                            {sess.signal_bucket?.replace('_', ' ') || 'WORTH A LOOK'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs font-mono text-slate-400">
+                                                        {Math.floor((sess.duration_seconds || 0) / 60)}m {(sess.duration_seconds || 0) % 60}s
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button
+                                                            onClick={() => setReviewSession(sess)}
+                                                            className="px-3.5 py-1.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ml-auto"
+                                                        >
+                                                            <Play className="w-3.5 h-3.5 fill-current" /> Review & Transcript
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {aiSessions.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="6" className="text-center py-12 text-slate-500 text-xs font-semibold">
+                                                        No candidate AI voice interview sessions completed yet. Candidates can start sessions at /ai-interview.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: HR ANALYTICS DASHBOARD */}
+                    {activeTab === 'hr-analytics' && (
+                        <HRAnalyticsDashboard />
                     )}
 
                     {/* TAB: SYSTEM SETTINGS */}
@@ -2077,8 +2631,136 @@ const HRDashboard = () => {
                     </div>
                 </div>
             )}
+
+            {/* FLOATING BULK ACTION BARS */}
+            {activeTab === 'candidates' && selectedCandidateIds.length > 0 && (
+                <BulkActionBar
+                    selectedCount={selectedCandidateIds.length}
+                    type="candidates"
+                    onClearSelection={() => setSelectedCandidateIds([])}
+                    onBulkAssign={handleBulkAssignModalOpen}
+                    onBulkEmail={handleOpenCandidateBulkEmail}
+                    onExportSelected={handleExportCandidatesCSV}
+                />
+            )}
+
+            {activeTab === 'applications' && selectedAppIds.length > 0 && (
+                <BulkActionBar
+                    selectedCount={selectedAppIds.length}
+                    type="applications"
+                    onClearSelection={() => setSelectedAppIds([])}
+                    onBulkStatusUpdate={handleBulkStatusUpdate}
+                    onBulkEmail={handleOpenApplicationBulkEmail}
+                    onExportSelected={handleExportApplicationsCSV}
+                />
+            )}
+
+            {/* MODAL: BULK EMAIL COMPOSER */}
+            {emailModal.open && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+                    <div className="bg-[#0F1728] border border-[#1E293B] p-8 rounded-[2rem] w-full max-w-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <button onClick={() => setEmailModal({ ...emailModal, open: false })} className="absolute top-6 right-6 text-slate-500 hover:text-white p-1.5 rounded-full hover:bg-white/5 transition-all">
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="mb-6">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest bg-purple-500/10 border border-purple-500/20 text-purple-400 mb-2">
+                                BROADCAST DISPATCH
+                            </span>
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                                Send Bulk Email ({emailModal.recipientCount} Candidates)
+                            </h3>
+                            <p className="text-slate-400 text-xs mt-1">
+                                Dispatches custom email notifications directly to the selected candidate inboxes and creates corresponding in-app alerts.
+                            </p>
+                        </div>
+
+                        {/* Quick Templates */}
+                        <div className="mb-5 space-y-2">
+                            <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Quick Templates</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {EMAIL_TEMPLATES.map(tmpl => (
+                                    <button
+                                        key={tmpl.id}
+                                        type="button"
+                                        onClick={() => setEmailModal(prev => ({
+                                            ...prev,
+                                            template: tmpl.id,
+                                            subject: tmpl.subject,
+                                            body: tmpl.body
+                                        }))}
+                                        className={`text-left p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                                            emailModal.template === tmpl.id
+                                                ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300'
+                                                : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                    >
+                                        {tmpl.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSendBulkEmailSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-2">Email Subject</label>
+                                <input
+                                    type="text"
+                                    value={emailModal.subject}
+                                    onChange={(e) => setEmailModal({ ...emailModal, subject: e.target.value })}
+                                    className="w-full bg-[#060B16] border border-[#1E293B] focus:border-cyan-500/40 rounded-xl px-4 py-3 text-xs focus:outline-none text-white"
+                                    placeholder="Enter email subject line..."
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-[9px] font-black uppercase tracking-wider text-slate-500">Message Body</label>
+                                    <span className="text-[9px] text-cyan-400 font-mono">Variables: &#123;name&#125;, &#123;email&#125;</span>
+                                </div>
+                                <textarea
+                                    rows="7"
+                                    value={emailModal.body}
+                                    onChange={(e) => setEmailModal({ ...emailModal, body: e.target.value })}
+                                    className="w-full bg-[#060B16] border border-[#1E293B] focus:border-cyan-500/40 rounded-xl px-4 py-3 text-xs focus:outline-none text-white leading-relaxed font-sans"
+                                    placeholder="Write your email body here..."
+                                    required
+                                />
+                            </div>
+
+                            <div className="pt-4 flex justify-end gap-3 border-t border-white/5">
+                                <button
+                                    type="button"
+                                    onClick={() => setEmailModal({ ...emailModal, open: false })}
+                                    className="px-6 py-3 rounded-xl text-xs font-bold bg-white/5 border border-white/5 hover:bg-white/10 transition-all uppercase tracking-wider"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={sendingEmail}
+                                    className="px-8 py-3 rounded-xl text-xs font-black bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-all uppercase tracking-wider flex items-center gap-2"
+                                >
+                                    <Send className="w-3.5 h-3.5" />
+                                    {sendingEmail ? 'Dispatching...' : `Send to ${emailModal.recipientCount} Candidates`}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: REAL-TIME AI VOICE INTERVIEW CANDIDATE REVIEW */}
+            {reviewSession && (
+                <AIInterviewReviewModal
+                    sessionData={reviewSession}
+                    onClose={() => { setReviewSession(null); fetchAiSessions(); }}
+                />
+            )}
         </div>
     );
 };
 
 export default HRDashboard;
+
