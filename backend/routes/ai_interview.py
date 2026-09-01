@@ -7,10 +7,15 @@ from bson.objectid import ObjectId
 import groq
 
 # LiveKit token generation imports
+import importlib
 try:
-    from livekit.api import AccessToken, VideoGrants
-    LIVEKIT_AVAILABLE = True
-except ImportError:
+    _livekit_api = importlib.import_module('livekit.api')
+    AccessToken = getattr(_livekit_api, 'AccessToken', None)
+    VideoGrants = getattr(_livekit_api, 'VideoGrants', None)
+    LIVEKIT_AVAILABLE = bool(AccessToken and VideoGrants)
+except Exception:
+    AccessToken = None
+    VideoGrants = None
     LIVEKIT_AVAILABLE = False
 
 ai_interview_bp = Blueprint('ai_interview', __name__)
@@ -250,26 +255,28 @@ def interact_ai(user_id, session_id):
         ai_text = f"Welcome to your {role_context} interview! Tell me about your background and key projects."
     else:
         system_prompt = (
-            f"You are an expert Senior Engineering Lead conducting an authentic, dynamic real-time voice interview for a candidate applying for a {role_context} position ({difficulty} level).\n\n"
-            f"CONVERSATIONAL INTERVIEW DIRECTIVES:\n"
-            f"1. React naturally to what the candidate just said in your very first sentence (e.g., 'That makes sense!', 'Great point about React hooks!'). Never output prompt labels, titles, or stage directions.\n"
-            f"2. Do not ask rigid generic questions. Ask an organic follow-up question that digs deeper into the specific technology, project, or scenario the candidate just mentioned.\n"
-            f"3. Keep your response concise (2 short spoken sentences max). Sentence 1: Brief validation of their point. Sentence 2: One clear follow-up question.\n"
-            f"4. Speak ONLY as the interviewer. Never simulate candidate dialogue or output '[INTERVIEWEE]' tags.\n"
-            f"5. If turn count is 5 or more, give brief final feedback and ask a concluding question followed by '[WRAP_UP]'."
+            f"You are an expert, conversational Senior Engineering Hiring Lead conducting a real-time voice interview for a candidate applying for a {role_context} position ({difficulty} level).\n\n"
+            f"STRICT 2-SENTENCE INTERVIEW STRUCTURE:\n"
+            f"1. Sentence 1: Reply and comment directly on what the candidate just said (e.g., acknowledge their project, technical concept, stack choice, or hesitation).\n"
+            f"2. Sentence 2: Ask a focused, organic technical follow-up question digging deeper into the architecture, challenges, trade-offs, or implementation details of what they mentioned.\n\n"
+            f"HANDLING SPECIAL CASES:\n"
+            f"- If the candidate gives a filler or acknowledgment (e.g., 'ok', 'yes', 'sure', 'give me a second'): Do NOT repeat the previous question; briefly say: 'Take your time, whenever you are ready!' and invite them to continue.\n"
+            f"- If the candidate asks a question or asks to repeat: Answer it directly in 1 short sentence, then ask your question.\n"
+            f"- Keep the entire response strictly 2 short spoken sentences so the conversation is snappy and realistic.\n"
+            f"- When turn count is 6 or more, provide brief positive feedback and ask a concluding wrap-up question followed by '[WRAP_UP]'."
         )
-
 
         messages = [{"role": "system", "content": system_prompt}]
         for t in past_turns:
             role = "assistant" if t.get('speaker') == 'ai' else "user"
             messages.append({"role": role, "content": t.get('text', '')})
 
-        if not user_utterance and len(past_turns) == 0:
-            messages.append({"role": "user", "content": "I am ready to start the interview."})
+        # Ensure the last message always has 'user' role for Groq API compliance
+        if len(messages) == 1 or messages[-1]["role"] != "user":
+            messages.append({"role": "user", "content": "I am ready to proceed with the interview."})
 
-        # Models to try with fallback (groq/compound-mini is fastest)
-        models_to_try = ["groq/compound-mini", "groq/compound", "allam-2-7b"]
+        # Models ordered by speed and quality (groq/compound-mini is sub-second)
+        models_to_try = ["groq/compound-mini", "allam-2-7b", "groq/compound"]
         ai_text = None
 
         for current_model in models_to_try:
@@ -277,9 +284,9 @@ def interact_ai(user_id, session_id):
                 response = groq_client.chat.completions.create(
                     model=current_model,
                     messages=messages,
-                    temperature=0.7,
-                    max_tokens=150,
-                    stop=["[INTENDED ANSWER:]", "[INTERVIEWEE:]", "[INTERVIEWER:]", "[QUESTION:]", "Candidate:", "Interviewer:"]
+                    temperature=0.5,
+                    max_tokens=90,
+                    stop=["[INTERVIEWEE:]", "[QUESTION:]", "Candidate:", "Interviewer:"]
                 )
                 ai_text = response.choices[0].message.content.strip()
                 if ai_text:
@@ -288,7 +295,15 @@ def interact_ai(user_id, session_id):
                 print(f"Groq interact error with model {current_model}: {e}")
 
         if not ai_text:
-            ai_text = f"Welcome! Could you share your technical background and key projects you have worked on?"
+            if len(past_turns) == 0:
+                ai_text = f"Welcome! Could you share your technical background and key projects you have worked on?"
+            else:
+                ai_text = f"Thank you for explaining that. Could you dive deeper into the key architecture choices and challenges you encountered?"
+
+    import re
+    if ai_text:
+        # Strip any reasoning tags if returned by reasoning models
+        ai_text = re.sub(r'<think>.*?</think>', '', ai_text, flags=re.DOTALL).strip()
 
     is_wrap_up = "[WRAP_UP]" in ai_text
     clean_ai_text = ai_text.replace("[WRAP_UP]", "").strip()
@@ -378,7 +393,7 @@ def generate_summary(user_id, session_id):
             f"Return ONLY valid JSON."
         )
         
-        models_to_try = ["groq/compound", "groq/compound-mini", "allam-2-7b"]
+        models_to_try = ["groq/compound", "groq/compound-mini", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "allam-2-7b"]
         for current_model in models_to_try:
             try:
                 res = groq_client.chat.completions.create(

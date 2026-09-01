@@ -97,16 +97,14 @@ def analyze_resume(text):
         """
         raw_text = generate_ai_response(prompt)
         if not raw_text:
-             raise ValueError("AI failed to return a valid response")
-             
-        print(f"RAW AI RESPONSE:\n{raw_text}\n{'='*40}")
-        
+            raise ValueError("AI failed to return a valid response")
+              
         diagnosis = _clean_json_response(raw_text)
         
-        if diagnosis:
+        if diagnosis and isinstance(diagnosis, dict):
             return diagnosis
             
-        raise ValueError(f"Failed to parse AI response as JSON. Raw text: {raw_text}")
+        raise ValueError(f"Failed to parse AI response as JSON.")
         
     except Exception as e:
         import traceback

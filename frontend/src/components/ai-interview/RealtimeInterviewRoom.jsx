@@ -243,13 +243,13 @@ const RealtimeInterviewRoom = ({ setupData, onInterviewFinish }) => {
                     clearTimeout(silenceDebounceRef.current);
                 }
 
-                // If candidate pauses for 900ms after speaking, immediately submit answer
+                // If candidate pauses naturally (850ms) after speaking, trigger AI reply promptly
                 silenceDebounceRef.current = setTimeout(() => {
                     if (!isAiSpeakingRef.current && currentText !== lastSubmittedTextRef.current) {
                         lastSubmittedTextRef.current = currentText;
                         triggerAiTurn(sid, currentText);
                     }
-                }, 900);
+                }, 850);
             }
         };
 
