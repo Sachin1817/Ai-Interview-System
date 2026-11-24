@@ -275,8 +275,8 @@ def interact_ai(user_id, session_id):
         if len(messages) == 1 or messages[-1]["role"] != "user":
             messages.append({"role": "user", "content": "I am ready to proceed with the interview."})
 
-        # Models ordered by speed and quality (groq/compound-mini is sub-second)
-        models_to_try = ["groq/compound-mini", "allam-2-7b", "groq/compound"]
+        # Models ordered by speed and quality (llama-3.1-8b-instant is sub-second)
+        models_to_try = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "qwen/qwen3.8-27b"]
         ai_text = None
 
         for current_model in models_to_try:
@@ -393,7 +393,7 @@ def generate_summary(user_id, session_id):
             f"Return ONLY valid JSON."
         )
         
-        models_to_try = ["groq/compound", "groq/compound-mini", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "allam-2-7b"]
+        models_to_try = ["llama-3.3-70b-versatile", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b", "llama-3.1-8b-instant"]
         for current_model in models_to_try:
             try:
                 res = groq_client.chat.completions.create(

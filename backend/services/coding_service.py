@@ -38,6 +38,13 @@ class CodingService:
         CRITICAL: Avoid common or cliché problems (like basic 'Login Forms' or 'FizzBuzz'). 
         Create a scenario-based problem that is unique to this session.
         
+        IMPORTANT EXECUTION RULES:
+        - The candidate's code will run in a sandboxed environment.
+        - If the problem requires input data, the code should read from STDIN. 
+        - You MUST provide a "test_input" field containing sample input data that will be piped to stdin during execution.
+        - The "expected_output" should match what the code produces when given the test_input.
+        - For Python use input() or sys.stdin, for JavaScript use require('fs').readFileSync(0,'utf-8'), for Java use Scanner(System.in), etc.
+        
         Difficulty Guidelines:
         - Easy: Basic syntax, loops, and simple logic.
         - Medium: Data structures, standard algorithms, and efficient logic.
@@ -46,9 +53,10 @@ class CodingService:
         Return the response ONLY as a JSON object with the following keys:
         {{
             "title": "Short descriptive title",
-            "instructions": "Detailed, step-by-step instructions for the candidate.",
+            "instructions": "Detailed, step-by-step instructions for the candidate. Include input/output format clearly.",
             "language": "Recommended programming language (e.g., 'python', 'javascript', 'java', 'html', 'bash')",
-            "expected_output": "A short string representing the exact expected stdout, or a description of expected behavior for UI tasks."
+            "expected_output": "The exact expected stdout when run with the test_input below.",
+            "test_input": "Sample input data to pipe into stdin. Use empty string if no input is needed."
         }}
         """
         

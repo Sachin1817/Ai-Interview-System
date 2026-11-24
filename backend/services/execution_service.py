@@ -3,12 +3,15 @@ import os
 import tempfile
 import time
 import shutil
+import re
+import platform
 
 class ExecutionService:
     @staticmethod
-    def run_code(language, code):
+    def run_code(language, code, stdin_input=""):
         """
         Runs code in a temporary environment and returns stdout, stderr, execution time, and memory.
+        stdin_input: optional string to feed into the process's standard input (prevents hanging on stdin reads).
         """
         supported_languages = ['python', 'javascript', 'typescript', 'java', 'cpp', 'c', 'csharp', 'go', 'rust', 'ruby', 'php', 'bash', 'html', 'css']
         
@@ -25,9 +28,16 @@ class ExecutionService:
                 "memory": "0 MB"
             }
 
+        is_windows = platform.system() == 'Windows'
+
         # Setup temporary file
         with tempfile.TemporaryDirectory() as temp_dir:
-            file_name = f"solution.{ExecutionService._get_extension(language)}"
+            # For Java, detect the public class name and use it as the filename
+            if language == 'java':
+                class_name = ExecutionService._detect_java_class(code)
+                file_name = f"{class_name}.java"
+            else:
+                file_name = f"solution.{ExecutionService._get_extension(language)}"
             file_path = os.path.join(temp_dir, file_name)
             
             modified_code = code
@@ -90,8 +100,18 @@ if (typeof process !== 'undefined') {
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(modified_code)
 
-            # Command Selection
-            cmd = ExecutionService._get_command(language, file_path, temp_dir)
+            # Command Selection (may raise Exception on compile errors)
+            try:
+                cmd = ExecutionService._get_command(language, file_path, temp_dir, is_windows)
+            except Exception as e:
+                # Compilation error — return it as stderr
+                return {
+                    "stdout": "",
+                    "stderr": str(e),
+                    "execution_time": 0.0,
+                    "exit_code": 1,
+                    "memory": "0 MB"
+                }
             
             start_time = time.time()
             try:
@@ -99,12 +119,13 @@ if (typeof process !== 'undefined') {
                 if not cmd:
                     raise FileNotFoundError()
 
-                # Execute with 5s timeout
+                # Execute with 10s timeout, piping stdin_input so the process gets EOF
                 process = subprocess.run(
                     cmd,
+                    input=stdin_input,
                     capture_output=True,
                     text=True,
-                    timeout=5,
+                    timeout=10,
                     cwd=temp_dir
                 )
                 execution_time = time.time() - start_time
@@ -117,7 +138,7 @@ if (typeof process !== 'undefined') {
                     "memory": "8 MB" # Default for now as real memory tracking requires OS-specific libs
                 }
             except subprocess.TimeoutExpired:
-                return {"error": "Execution Timed Out (Maximum 5s allowed)"}
+                return {"error": "Execution Timed Out (Maximum 10s allowed)"}
             except FileNotFoundError:
                 # Fallback: compiler/runtime not installed on the system.
                 # Return a successful flag with standard text so the AI API Key reviews the code logic!
@@ -130,6 +151,21 @@ if (typeof process !== 'undefined') {
                 }
             except Exception as e:
                 return {"error": str(e)}
+
+    @staticmethod
+    def _detect_java_class(code):
+        """
+        Detects the public class name from Java source code.
+        Falls back to 'Main' if no public class is found.
+        """
+        match = re.search(r'public\s+class\s+(\w+)', code)
+        if match:
+            return match.group(1)
+        # Try any class declaration
+        match = re.search(r'class\s+(\w+)', code)
+        if match:
+            return match.group(1)
+        return 'Main'
 
     @staticmethod
     def _get_extension(language):
@@ -152,7 +188,9 @@ if (typeof process !== 'undefined') {
         return mapping.get(language, 'txt')
 
     @staticmethod
-    def _get_command(language, file_path, temp_dir):
+    def _get_command(language, file_path, temp_dir, is_windows=False):
+        exe_name = 'solution.exe' if is_windows else './solution'
+
         if language == 'python':
             return ['python', file_path]
         elif language == 'javascript':
@@ -169,29 +207,42 @@ if (typeof process !== 'undefined') {
             return ['go', 'run', file_path]
         elif language == 'rust':
             # Compile then run
-            compile_cmd = ['rustc', file_path, '-o', 'solution']
-            res = subprocess.run(compile_cmd, cwd=temp_dir, capture_output=True)
+            out_name = 'solution.exe' if is_windows else 'solution'
+            compile_cmd = ['rustc', file_path, '-o', os.path.join(temp_dir, out_name)]
+            res = subprocess.run(compile_cmd, cwd=temp_dir, capture_output=True, text=True, timeout=15)
             if res.returncode != 0:
-                raise Exception(res.stderr.decode('utf-8'))
-            return ['./solution']
+                raise Exception(res.stderr)
+            return [os.path.join(temp_dir, out_name)]
         elif language == 'java':
-            # Compile then run
-            compile_cmd = ['javac', file_path]
-            subprocess.run(compile_cmd, cwd=temp_dir)
-            return ['java', 'solution']
+            # Compile
+            compile_res = subprocess.run(['javac', file_path], cwd=temp_dir, capture_output=True, text=True, timeout=15)
+            if compile_res.returncode != 0:
+                raise Exception(compile_res.stderr)
+            # Detect class name from filename (already set correctly in run_code)
+            class_name = os.path.splitext(os.path.basename(file_path))[0]
+            return ['java', '-cp', temp_dir, class_name]
         elif language == 'cpp':
             # Compile then run
-            compile_cmd = ['g++', file_path, '-o', 'solution']
-            subprocess.run(compile_cmd, cwd=temp_dir)
-            return ['./solution']
+            out_path = os.path.join(temp_dir, 'solution.exe' if is_windows else 'solution')
+            compile_res = subprocess.run(['g++', file_path, '-o', out_path], cwd=temp_dir, capture_output=True, text=True, timeout=15)
+            if compile_res.returncode != 0:
+                raise Exception(compile_res.stderr)
+            return [out_path]
         elif language == 'c':
             # Compile then run
-            compile_cmd = ['gcc', file_path, '-o', 'solution']
-            subprocess.run(compile_cmd, cwd=temp_dir)
-            return ['./solution']
+            out_path = os.path.join(temp_dir, 'solution.exe' if is_windows else 'solution')
+            compile_res = subprocess.run(['gcc', file_path, '-o', out_path], cwd=temp_dir, capture_output=True, text=True, timeout=15)
+            if compile_res.returncode != 0:
+                raise Exception(compile_res.stderr)
+            return [out_path]
         elif language == 'csharp':
             # Compile then run
-            compile_cmd = ['csc', file_path, '-out:solution.exe']
-            subprocess.run(compile_cmd, cwd=temp_dir)
-            return ['mono', 'solution.exe']
+            out_name = 'solution.exe'
+            compile_res = subprocess.run(['csc', file_path, f'-out:{out_name}'], cwd=temp_dir, capture_output=True, text=True, timeout=15)
+            if compile_res.returncode != 0:
+                raise Exception(compile_res.stderr)
+            if is_windows:
+                return [os.path.join(temp_dir, out_name)]
+            else:
+                return ['mono', os.path.join(temp_dir, out_name)]
         return []

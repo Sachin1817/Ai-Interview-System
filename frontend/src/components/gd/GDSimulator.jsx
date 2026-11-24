@@ -493,11 +493,18 @@ const GDSimulator = () => {
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                         {/* Top Verdict Banner */}
                         <div className="glass-panel p-10 rounded-[3rem] text-center space-y-3 relative overflow-hidden">
-                            <div className="text-6xl font-black text-cyan-400 tracking-tighter">
+                            <div className={`text-6xl font-black tracking-tighter ${
+                                Number(evaluation.overall_score) >= 7 ? 'text-emerald-400' :
+                                Number(evaluation.overall_score) >= 5 ? 'text-cyan-400' :
+                                Number(evaluation.overall_score) >= 3 ? 'text-amber-400' : 'text-rose-400'
+                            }`}>
                                 {evaluation.overall_score}<span className="text-2xl text-slate-500">/10</span>
                             </div>
                             <h2 className="text-2xl font-black text-white uppercase tracking-tight">
-                                GD Placement Verdict: <span className="text-emerald-400">{evaluation.verdict}</span>
+                                GD Placement Verdict: <span className={
+                                    evaluation.verdict?.includes('Clear') ? 'text-emerald-400' :
+                                    evaluation.verdict?.includes('Borderline') ? 'text-amber-400' : 'text-rose-400'
+                                }>{evaluation.verdict}</span>
                             </h2>
                             <p className="text-xs text-slate-400 max-w-xl mx-auto leading-relaxed">
                                 {evaluation.summary}

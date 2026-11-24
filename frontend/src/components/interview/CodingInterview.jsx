@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Code2, Play, Send, Timer, Terminal, ChevronRight,
-    CheckCircle2, AlertCircle, RefreshCcw, Cpu, Zap, Trophy
+    CheckCircle2, AlertCircle, RefreshCcw, Cpu, Zap, Trophy, Keyboard
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,6 +25,8 @@ const CodingInterview = () => {
     const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState('description');
     const [saveStatus, setSaveStatus] = useState('Saved.');
+    const [stdinInput, setStdinInput] = useState('');
+    const [showStdin, setShowStdin] = useState(false);
     
     // Assigned manual challenges state
     const [assignedChallenges, setAssignedChallenges] = useState([]);
@@ -83,6 +85,7 @@ const CodingInterview = () => {
             const res = await api.post('/coding/generate', { role, difficulty });
             setChallenge(res.data.challenge);
             setLanguage(res.data.challenge.language || 'python');
+            setStdinInput(res.data.challenge.test_input || '');
 
             const savedCode = localStorage.getItem(`coding_code_${role}`);
             if (savedCode) {
@@ -210,7 +213,7 @@ const CodingInterview = () => {
         setIsRunning(true);
         setOutput(prev => [...prev, { type: 'info', content: `> Initializing ${language} runtime...` }]);
         try {
-            const res = await api.post('/coding/run', { language, code });
+            const res = await api.post('/coding/run', { language, code, stdin_input: stdinInput });
 
             if (res.data.error) {
                 setOutput(prev => [...prev, { type: 'error', content: res.data.error }]);
@@ -591,36 +594,80 @@ const CodingInterview = () => {
                                         </div>
                                     </div>
 
-                                    {/* Console */}
-                                    <div className="flex-1 glass-panel rounded-[2.5rem] border-white/5 flex flex-col overflow-hidden shadow-lg bg-slate-950/90">
-                                        <div className="bg-white/5 px-8 py-3 border-b border-white/5 flex items-center gap-3">
-                                            <Terminal className="w-4 h-4 text-slate-500" />
-                                            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Compiler Feedback</span>
-                                            <button onClick={() => setOutput([])} className="ml-auto text-[10px] text-slate-500 hover:text-white transition-colors uppercase font-black tracking-widest underline decoration-dotted underline-offset-4">Reset Log</button>
-                                        </div>
-                                        <div className="flex-1 p-8 font-mono text-xs overflow-y-auto custom-scrollbar">
-                                            {output.length === 0 && <span className="text-slate-600 italic font-medium">Click "Execute Code" to see results...</span>}
-                                            <AnimatePresence>
-                                                {output.map((line, i) => (
+                                    {/* Console & Stdin Container */}
+                                    <div className="flex-1 flex flex-col gap-3 min-h-0">
+                                        {/* Console */}
+                                        <div className={`${showStdin ? 'flex-[2]' : 'flex-1'} glass-panel rounded-[2.5rem] border-white/5 flex flex-col overflow-hidden shadow-lg bg-slate-950/90`}>
+                                            <div className="bg-white/5 px-8 py-3 border-b border-white/5 flex items-center gap-3">
+                                                <Terminal className="w-4 h-4 text-slate-500" />
+                                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Compiler Feedback</span>
+                                                <button 
+                                                    onClick={() => setShowStdin(!showStdin)} 
+                                                    className={`ml-auto text-[10px] px-3 py-1 rounded-lg font-black uppercase tracking-widest transition-all flex items-center gap-2 ${showStdin ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-500 hover:text-cyan-400 border border-white/5 hover:border-cyan-500/30'}`}
+                                                    title="Toggle stdin input panel"
+                                                >
+                                                    <Keyboard className="w-3 h-3" />
+                                                    {showStdin ? 'Hide Input' : 'Custom Input'}
+                                                </button>
+                                                <button onClick={() => setOutput([])} className="text-[10px] text-slate-500 hover:text-white transition-colors uppercase font-black tracking-widest underline decoration-dotted underline-offset-4">Reset Log</button>
+                                            </div>
+                                            <div className="flex-1 p-8 font-mono text-xs overflow-y-auto custom-scrollbar">
+                                                {output.length === 0 && <span className="text-slate-600 italic font-medium">Click "Execute Code" to see results...</span>}
+                                                <AnimatePresence>
+                                                    {output.map((line, i) => (
+                                                        <motion.div
+                                                            key={i}
+                                                            initial={{ opacity: 0, x: -10 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            transition={{ duration: 0.2, delay: i * 0.05 }}
+                                                            className={`mb-2 last:mb-0 break-all leading-relaxed ${line.type === 'error' ? 'text-rose-400' : line.type === 'info' ? 'text-cyan-400/70' : line.type === 'stderr' ? 'text-orange-400' : 'text-slate-300'}`}
+                                                        >
+                                                            <span className="opacity-30 mr-3">[{i + 1}]</span>{line.content}
+                                                        </motion.div>
+                                                    ))}
+                                                </AnimatePresence>
+                                                {isRunning && (
                                                     <motion.div
-                                                        key={i}
-                                                        initial={{ opacity: 0, x: -10 }}
-                                                        animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ duration: 0.2, delay: i * 0.05 }}
-                                                        className={`mb-2 last:mb-0 break-all leading-relaxed ${line.type === 'error' ? 'text-rose-400' : line.type === 'info' ? 'text-cyan-400/70' : line.type === 'stderr' ? 'text-orange-400' : 'text-slate-300'}`}
-                                                    >
-                                                        <span className="opacity-30 mr-3">[{i + 1}]</span>{line.content}
-                                                    </motion.div>
-                                                ))}
-                                            </AnimatePresence>
-                                            {isRunning && (
-                                                <motion.div
-                                                    animate={{ opacity: [0.4, 1, 0.4] }}
-                                                    transition={{ repeat: Infinity, duration: 1.5 }}
-                                                    className="w-2 h-4 bg-cyan-500 inline-block align-middle ml-2 shadow-glow-cyan"
-                                                />
-                                            )}
+                                                        animate={{ opacity: [0.4, 1, 0.4] }}
+                                                        transition={{ repeat: Infinity, duration: 1.5 }}
+                                                        className="w-2 h-4 bg-cyan-500 inline-block align-middle ml-2 shadow-glow-cyan"
+                                                    />
+                                                )}
+                                            </div>
                                         </div>
+
+                                        {/* Stdin Input Panel */}
+                                        <AnimatePresence>
+                                            {showStdin && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="flex-1 glass-panel rounded-[2rem] border-white/5 flex flex-col overflow-hidden shadow-lg bg-slate-950/90 min-h-[100px]"
+                                                >
+                                                    <div className="bg-white/5 px-6 py-2 border-b border-white/5 flex items-center gap-3">
+                                                        <Keyboard className="w-3 h-3 text-cyan-500" />
+                                                        <span className="text-[10px] text-cyan-400/80 font-black uppercase tracking-widest">Custom Input (stdin)</span>
+                                                        {stdinInput && (
+                                                            <button 
+                                                                onClick={() => setStdinInput('')} 
+                                                                className="ml-auto text-[10px] text-slate-600 hover:text-rose-400 transition-colors uppercase font-black tracking-widest"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <textarea
+                                                        value={stdinInput}
+                                                        onChange={(e) => setStdinInput(e.target.value)}
+                                                        placeholder={`Enter test input here...\nThis will be piped to your program's stdin.`}
+                                                        spellCheck={false}
+                                                        className="flex-1 bg-transparent text-emerald-300 font-mono text-xs p-5 resize-none focus:outline-none custom-scrollbar placeholder-slate-700 leading-relaxed w-full"
+                                                    />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 </div>
                             </div>

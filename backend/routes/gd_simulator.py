@@ -391,11 +391,11 @@ def process_gd_turn(user_id):
 @token_required
 def evaluate_gd_session(user_id):
     """
-    Conclude GD session and provide AI scoring across:
-    1. Content & Articulation (0-10)
+    Conclude GD session and provide strict, realistic AI scoring across:
+    1. Content Depth (0-10)
     2. Leadership & Initiation (0-10)
-    3. Listening & Group Dynamics (0-10)
-    4. Assertiveness & Decorum (0-10)
+    3. Active Listening & Group Dynamics (0-10)
+    4. Articulation & Decorum (0-10)
     5. Overall Placement Clearance Verdict
     """
     data = request.get_json() or {}
@@ -411,49 +411,128 @@ def evaluate_gd_session(user_id):
     all_turns = sess.get("turns", [])
     cand_turns = [t for t in all_turns if t.get("type") == "candidate"]
 
-    if not cand_turns:
-        return jsonify({
+    cand_texts = [t.get('text', '').strip() for t in cand_turns if t.get('text', '').strip()]
+    cand_word_count = sum(len(txt.split()) for txt in cand_texts)
+    turn_count = len(cand_texts)
+
+    # Fetch candidate name
+    cand_name = "Candidate"
+    try:
+        u = users_col.find_one({"_id": ObjectId(user_id)})
+        if u:
+            cand_name = u.get("name", "Candidate")
+    except Exception:
+        pass
+
+    # ════════════════════════════════════════════════════════════════════════════
+    # CASE 1: ZERO PARTICIPATION (No speech or text provided)
+    # ════════════════════════════════════════════════════════════════════════════
+    if turn_count == 0 or cand_word_count == 0:
+        zero_eval = {
+            "content_depth": 0.0,
+            "leadership_initiative": 0.0,
+            "active_listening": 0.0,
+            "articulation_decorum": 0.0,
             "overall_score": 0.0,
-            "verdict": "Needs Participation",
-            "feedback": "No participation recorded during the GD session.",
-            "metrics": {"content": 0, "leadership": 0, "listening": 0, "assertiveness": 0}
+            "verdict": "Needs Training ❌",
+            "top_strengths": [
+                "Joined the virtual GD session on time"
+            ],
+            "key_improvements": [
+                "You remained completely silent. In campus placements, speaking is strictly required.",
+                "Make an early entry within the first 60 seconds to establish your presence.",
+                "Contribute at least 2 to 3 substantive points supported by real-world examples."
+            ],
+            "summary": "Immediate Disqualification (0/10): Zero participation recorded. In competitive campus placement GDs, silence or failure to contribute results in immediate elimination."
+        }
+        gd_sessions_col.update_one(
+            {"_id": ObjectId(session_id)},
+            {"$set": {"evaluation": zero_eval, "status": "completed", "completed_at": datetime.datetime.utcnow()}}
+        )
+        return jsonify({
+            "session_id": session_id,
+            "topic": sess.get("topic"),
+            "evaluation": zero_eval,
+            "turns_count": 0
         }), 200
 
+    # ════════════════════════════════════════════════════════════════════════════
+    # CASE 2: SEVERELY MINIMAL PARTICIPATION (Only 1 brief sentence or < 25 words)
+    # ════════════════════════════════════════════════════════════════════════════
+    if turn_count == 1 and cand_word_count < 25:
+        minimal_score = 1.0 if cand_word_count < 10 else 1.5
+        minimal_eval = {
+            "content_depth": 1.0,
+            "leadership_initiative": 0.5,
+            "active_listening": 1.5,
+            "articulation_decorum": 2.0,
+            "overall_score": minimal_score,
+            "verdict": "Needs Training ❌",
+            "top_strengths": [
+                f"Attempted a single brief interjection ({cand_word_count} words total)",
+                "Maintained polite and non-disruptive language"
+            ],
+            "key_improvements": [
+                f"Severely low volume: You only spoke 1 short sentence ({cand_word_count} words). A placement GD requires multiple detailed viewpoints.",
+                "Avoid single-line affirmations: State your stance, provide data or real-world evidence, and analyze the implications.",
+                "Actively engage: Address peers by name, counter or build upon their points, and summarize key insights to demonstrate leadership."
+            ],
+            "summary": f"Disqualified / Needs Rigorous Training ({minimal_score}/10): You only contributed a single brief statement of {cand_word_count} words in the entire discussion. In campus placement rounds, a single sentence is grossly insufficient to clear cutoffs and reflects lack of preparation."
+        }
+        gd_sessions_col.update_one(
+            {"_id": ObjectId(session_id)},
+            {"$set": {"evaluation": minimal_eval, "status": "completed", "completed_at": datetime.datetime.utcnow()}}
+        )
+        return jsonify({
+            "session_id": session_id,
+            "topic": sess.get("topic"),
+            "evaluation": minimal_eval,
+            "turns_count": turn_count
+        }), 200
+
+    # ════════════════════════════════════════════════════════════════════════════
+    # CASE 3: COMPREHENSIVE AI EVALUATION WITH STRICT REALISTIC BENCHMARKS
+    # ════════════════════════════════════════════════════════════════════════════
     dialogue_summary = "\n".join([
         f"{t.get('sender_name')}: {t.get('text')}" for t in all_turns
     ])
 
     prompt = f"""
-    You are an expert HR evaluation panel rating a candidate's Group Discussion performance.
+    You are a strict, senior HR panelist evaluating a candidate's Group Discussion performance in a competitive campus recruitment drive.
     Topic: "{sess.get('topic')}"
-
-    Full GD Transcript:
-    {dialogue_summary}
+    Candidate Name: "{cand_name}"
+    Candidate Speaking Turns: {turn_count}
+    Candidate Total Words: {cand_word_count}
 
     Candidate Contributions:
-    {json.dumps([t['text'] for t in cand_turns])}
+    {json.dumps(cand_texts, indent=2)}
 
-    Evaluate the candidate on a scale of 0 to 10 for:
-    1. content_depth: Structured logic, domain examples, and relevant points.
-    2. leadership_initiative: Timely entry, guiding discussion, opening or summarizing.
-    3. active_listening: Acknowledging others, building on ideas, avoid rude interruptions.
-    4. articulation_decorum: Professional vocabulary, clarity, tone, and poise.
-    5. overall_score: Weighted composite (0 to 10).
+    Full Discussion Transcript:
+    {dialogue_summary}
 
-    Also provide:
-    - verdict: "Clear Shortlist ✅", "Borderline ⚠️", or "Needs Training ❌"
-    - top_strengths: Array of 3 bullet points
-    - key_improvements: Array of 3 actionable coaching tips
-    - summary: 2-3 sentence executive recap.
+    STRICT CAMPUS GD GRADING BENCHMARKS:
+    - Extreme Realism: DO NOT inflate scores or give generous marks for minimal effort.
+    - Word Count & Volume Rubric:
+      * 25 - 45 words total (1-2 brief turns): Overall Score must NOT exceed 2.0 - 3.0 / 10 ("Needs Training ❌").
+      * 46 - 80 words total (2-3 moderate turns): Overall Score between 3.5 - 5.0 / 10 ("Needs Training ❌" or "Borderline ⚠️").
+      * 81 - 150 words total (3+ structured turns with clear examples and peer interaction): Overall Score between 6.0 - 7.5 / 10 ("Clear Shortlist ✅").
+      * 150+ words total (high-impact insights, clear data, steering group, resolving disagreements): Overall Score 8.0 - 9.5 / 10 ("Clear Shortlist ✅").
+    - DO NOT hallucinate generic strengths if the candidate barely contributed.
+    - Evaluate on a scale of 0 to 10 for:
+      1. content_depth: Structured logic, domain examples, statistics, and depth.
+      2. leadership_initiative: Timely entry, steering conversation, opening or summarizing.
+      3. active_listening: Acknowledging peers' points specifically, building upon or refuting them.
+      4. articulation_decorum: Professional vocabulary, clarity, tone, and poise.
+      5. overall_score: Weighted composite (0 to 10).
 
     Output JSON ONLY:
     {{
-        "content_depth": 8.5,
-        "leadership_initiative": 8.0,
-        "active_listening": 9.0,
-        "articulation_decorum": 8.5,
-        "overall_score": 8.5,
-        "verdict": "Clear Shortlist ✅",
+        "content_depth": 3.0,
+        "leadership_initiative": 2.5,
+        "active_listening": 3.0,
+        "articulation_decorum": 4.0,
+        "overall_score": 3.0,
+        "verdict": "Needs Training ❌",
         "top_strengths": ["...", "...", "..."],
         "key_improvements": ["...", "...", "..."],
         "summary": "..."
@@ -462,24 +541,42 @@ def evaluate_gd_session(user_id):
 
     raw = generate_ai_response(prompt)
     parsed = _clean_json(raw) or {
-        "content_depth": 7.5,
-        "leadership_initiative": 7.0,
-        "active_listening": 8.0,
-        "articulation_decorum": 8.0,
-        "overall_score": 7.6,
-        "verdict": "Clear Shortlist ✅",
+        "content_depth": 3.0,
+        "leadership_initiative": 2.0,
+        "active_listening": 3.5,
+        "articulation_decorum": 4.0,
+        "overall_score": 3.0,
+        "verdict": "Needs Training ❌",
         "top_strengths": [
-            "Maintained respectful tone when presenting counter-arguments",
-            "Directly addressed peer points before introducing new perspectives",
-            "Clear logical progression in spoken points"
+            f"Participated in the discussion across {turn_count} turn(s)",
+            "Maintained a respectful and professional demeanor"
         ],
         "key_improvements": [
-            "Attempt to synthesize or summarize the group's consensus towards the end",
-            "Bring in more quantitative industry statistics to reinforce arguments",
-            "Be slightly more proactive during silent transition periods"
+            "Contribute more substantive arguments backed by empirical industry examples",
+            "Engage more actively with other participants rather than waiting passively",
+            "Synthesize divergent opinions to demonstrate leadership"
         ],
-        "summary": "Solid overall GD participation with good listening skills and coherent arguments."
+        "summary": f"The candidate demonstrated baseline courtesy but contributed insufficient content ({cand_word_count} words across {turn_count} turn(s)) to meet placement standards."
     }
+
+    # Programmatic Safeguard against LLM Hallucinated Leniency
+    if cand_word_count < 35:
+        parsed["overall_score"] = min(float(parsed.get("overall_score", 2.0)), 2.0)
+        parsed["content_depth"] = min(float(parsed.get("content_depth", 1.5)), 1.5)
+        parsed["leadership_initiative"] = min(float(parsed.get("leadership_initiative", 1.0)), 1.0)
+        parsed["active_listening"] = min(float(parsed.get("active_listening", 2.0)), 2.0)
+        parsed["articulation_decorum"] = min(float(parsed.get("articulation_decorum", 3.0)), 3.0)
+        parsed["verdict"] = "Needs Training ❌"
+    elif cand_word_count < 65:
+        parsed["overall_score"] = min(float(parsed.get("overall_score", 4.0)), 3.8)
+        parsed["content_depth"] = min(float(parsed.get("content_depth", 3.0)), 3.0)
+        parsed["leadership_initiative"] = min(float(parsed.get("leadership_initiative", 2.5)), 2.5)
+        parsed["verdict"] = "Needs Training ❌"
+
+    # Ensure all scores are rounded to 1 decimal place
+    for key in ["content_depth", "leadership_initiative", "active_listening", "articulation_decorum", "overall_score"]:
+        if key in parsed:
+            parsed[key] = round(float(parsed[key]), 1)
 
     gd_sessions_col.update_one(
         {"_id": ObjectId(session_id)},

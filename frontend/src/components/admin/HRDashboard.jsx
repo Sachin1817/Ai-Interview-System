@@ -6,11 +6,12 @@ import {
     BookOpen, Sparkles, CheckCircle, AlertCircle, X, ChevronRight, Code, User,
     LayoutDashboard, ClipboardList, Shield, Settings, Menu, LogOut, FileText,
     ChevronLeft, ArrowLeft, RefreshCw, Check, AlertTriangle, Bell, MoreVertical,
-    ChevronDown, Download, Eye, TrendingUp, Terminal
+    ChevronDown, ChevronUp, Download, Eye, TrendingUp, Terminal
 } from 'lucide-react';
 import api from '../../services/api';
 import aiInterviewAPI from '../../services/aiInterviewApi';
 import AIInterviewReviewModal from './AIInterviewReviewModal';
+import CandidateAnswersModal from './CandidateAnswersModal';
 import HRAnalyticsDashboard from './HRAnalyticsDashboard';
 import BulkActionBar from './BulkActionBar';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -102,6 +103,10 @@ const HRDashboard = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'candidates', 'jobs', 'submissions', 'settings'
     const [selectedCandidate, setSelectedCandidate] = useState(null); // Detailed profile drawer
+    const [selectedInterviewAnswers, setSelectedInterviewAnswers] = useState(null); // Modal for viewing candidate answers
+    const [expandedAnswersId, setExpandedAnswersId] = useState(null); // Inline Q&A toggle in Submissions tab
+    const [candidateInterviewHistory, setCandidateInterviewHistory] = useState([]); // All interview sessions for selectedCandidate
+    const [loadingCandidateHistory, setLoadingCandidateHistory] = useState(false);
 
     // API State Variables
     const [searchQuery, setSearchQuery] = useState('');
@@ -247,6 +252,29 @@ const HRDashboard = () => {
             setApplicationsList(res.data);
         } catch (e) {
             console.error("Failed to fetch applications:", e);
+        }
+    };
+
+    const fetchCandidateInterviewAnswers = async (candidateId) => {
+        if (!candidateId) return;
+        setLoadingCandidateHistory(true);
+        try {
+            const res = await api.get(`/admin/candidates/${candidateId}/interview-answers`);
+            setCandidateInterviewHistory(res.data || []);
+        } catch (err) {
+            console.error("Failed to fetch candidate interview answers:", err);
+            setCandidateInterviewHistory([]);
+        } finally {
+            setLoadingCandidateHistory(false);
+        }
+    };
+
+    const handleSelectCandidate = (cand) => {
+        setSelectedCandidate(cand);
+        if (cand && (cand.id || cand._id)) {
+            fetchCandidateInterviewAnswers(cand.id || cand._id);
+        } else {
+            setCandidateInterviewHistory([]);
         }
     };
 
@@ -1312,7 +1340,7 @@ const HRDashboard = () => {
                                                                         className="w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900"
                                                                     />
                                                                 </td>
-                                                                <td className="px-6 py-4 flex items-center gap-3" onClick={() => setSelectedCandidate(cand)}>
+                                                                <td className="px-6 py-4 flex items-center gap-3" onClick={() => handleSelectCandidate(cand)}>
                                                                     <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center font-bold text-xs text-cyan-400 border border-white/5">
                                                                         {cand.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                                                                     </div>
@@ -1321,16 +1349,16 @@ const HRDashboard = () => {
                                                                         <div className="text-[10px] text-slate-500 mt-0.5">{cand.email}</div>
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-xs font-bold text-slate-400" onClick={() => setSelectedCandidate(cand)}>{cand.branch}</td>
-                                                                <td className="px-6 py-4" onClick={() => setSelectedCandidate(cand)}>
+                                                                <td className="px-6 py-4 text-xs font-bold text-slate-400" onClick={() => handleSelectCandidate(cand)}>{cand.branch}</td>
+                                                                <td className="px-6 py-4" onClick={() => handleSelectCandidate(cand)}>
                                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${cand.has_resume ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
                                                                         {cand.has_resume ? 'Analyzed' : 'No Resume'}
                                                                     </span>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-xs font-black text-cyan-400" onClick={() => setSelectedCandidate(cand)}>
+                                                                <td className="px-6 py-4 text-xs font-black text-cyan-400" onClick={() => handleSelectCandidate(cand)}>
                                                                     {cand.has_resume ? `${cand.ats_score}/100` : 'N/A'}
                                                                 </td>
-                                                                <td className="px-6 py-4" onClick={() => setSelectedCandidate(cand)}>
+                                                                <td className="px-6 py-4" onClick={() => handleSelectCandidate(cand)}>
                                                                     <div className="flex flex-wrap gap-1 max-w-[320px]">
                                                                         {cand.skills?.slice(0, 4).map(skill => (
                                                                             <span key={skill} className="text-[7.5px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-slate-400">
@@ -1342,7 +1370,7 @@ const HRDashboard = () => {
                                                                         )}
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-right" onClick={() => setSelectedCandidate(cand)}>
+                                                                <td className="px-6 py-4 text-right" onClick={() => handleSelectCandidate(cand)}>
                                                                     <ChevronRight className="w-4 h-4 text-slate-500 ml-auto" />
                                                                 </td>
                                                             </tr>
@@ -1500,6 +1528,114 @@ const HRDashboard = () => {
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        {/* CANDIDATE COMPLETED INTERVIEWS & VERBATIM ANSWERS HISTORY */}
+                                        <div className="bg-[#060B16]/60 border border-[#1E293B] rounded-2xl p-6 md:p-8 space-y-6">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                                                <div>
+                                                    <h3 className="text-sm font-black uppercase text-cyan-400 tracking-wider flex items-center gap-2">
+                                                        <FileText className="w-4 h-4 text-cyan-400" /> Candidate Interview Answers & Recorded Transcripts
+                                                    </h3>
+                                                    <p className="text-xs text-slate-400 mt-1">Review the verbatim technical & behavioral answers submitted by {selectedCandidate.name}.</p>
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 w-fit">
+                                                    {candidateInterviewHistory.length} Sessions Available
+                                                </span>
+                                            </div>
+
+                                            {loadingCandidateHistory ? (
+                                                <div className="py-8 text-center text-slate-500 text-xs font-bold flex items-center justify-center gap-2">
+                                                    <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" /> Loading candidate interview answers...
+                                                </div>
+                                            ) : candidateInterviewHistory.length > 0 ? (
+                                                <div className="space-y-4">
+                                                    {candidateInterviewHistory.map((sess, sIdx) => {
+                                                        const isExpanded = expandedAnswersId === sess.session_id;
+                                                        const score = sess.result?.overall_score ?? sess.result?.score ?? 0;
+                                                        return (
+                                                            <div key={sess.session_id || sIdx} className="bg-slate-900/60 border border-white/5 rounded-2xl p-5 space-y-4 transition-all hover:border-cyan-500/30">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                                                                    <div>
+                                                                        <div className="text-xs font-black text-white flex items-center gap-2">
+                                                                            <span>{sess.role}</span>
+                                                                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                                                                {sess.round_type}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="text-[10px] text-slate-500 mt-0.5">
+                                                                            {sess.started_at ? new Date(sess.started_at).toLocaleDateString() : 'Recent'} • {sess.answers_count} Answers Logged
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-4">
+                                                                        <div className="text-right">
+                                                                            <div className="text-[9px] uppercase font-black tracking-widest text-slate-500">Score</div>
+                                                                            <div className="text-base font-black text-cyan-400">{score}/100</div>
+                                                                        </div>
+
+                                                                        <div className="flex items-center gap-2">
+                                                                            <button
+                                                                                onClick={() => setSelectedInterviewAnswers({
+                                                                                    ...sess,
+                                                                                    candidate_name: selectedCandidate.name,
+                                                                                    candidate_email: selectedCandidate.email
+                                                                                })}
+                                                                                className="px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-cyan-500/10"
+                                                                            >
+                                                                                <Eye className="w-3.5 h-3.5" /> Full Answers Modal
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => setExpandedAnswersId(isExpanded ? null : sess.session_id)}
+                                                                                className="p-1.5 rounded-xl text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                                                                                title={isExpanded ? 'Collapse' : 'Expand inline'}
+                                                                            >
+                                                                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Expandable Q&A answers */}
+                                                                {isExpanded && (
+                                                                    <div className="space-y-4 pt-2">
+                                                                        {sess.answers?.length > 0 ? (
+                                                                            sess.answers.map((ans, aIdx) => (
+                                                                                <div key={ans._id || aIdx} className="bg-[#050A14] border border-white/5 p-4 rounded-xl space-y-2">
+                                                                                    <div className="flex items-center justify-between text-[10px]">
+                                                                                        <span className="font-bold text-cyan-400">Q{aIdx + 1} • {ans.topic || 'General'}</span>
+                                                                                        {ans.evaluation?.score !== undefined && (
+                                                                                            <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold">
+                                                                                                Score: {ans.evaluation.score}/10
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <p className="text-xs font-semibold text-white">{ans.question}</p>
+                                                                                    <div className="bg-white/[0.02] border border-cyan-500/20 p-3 rounded-lg text-xs text-slate-200 leading-relaxed font-sans">
+                                                                                        <div className="text-[9px] font-black uppercase text-cyan-400 mb-1">Candidate Answer:</div>
+                                                                                        {ans.answer || <span className="text-rose-400 italic">[No answer recorded]</span>}
+                                                                                    </div>
+                                                                                    {ans.evaluation?.feedback && (
+                                                                                        <p className="text-[11px] text-slate-400 italic">
+                                                                                            AI Feedback: {typeof ans.evaluation.feedback === 'string' ? ans.evaluation.feedback : JSON.stringify(ans.evaluation.feedback)}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                            ))
+                                                                        ) : (
+                                                                            <p className="text-xs text-slate-500 italic">No individual answers recorded for this session.</p>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="py-6 text-center text-slate-500 text-xs">
+                                                    No completed interview sessions recorded for this candidate yet.
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -1849,6 +1985,7 @@ const HRDashboard = () => {
                                                 <th className="px-6 py-4">Interview Type</th>
                                                 <th className="px-6 py-4">Interview Status</th>
                                                 <th className="px-6 py-4">Assignment Date</th>
+                                                <th className="px-6 py-4 text-right">Candidate Answers</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#1E293B]">
@@ -1876,6 +2013,9 @@ const HRDashboard = () => {
                                                         <td className="px-6 py-4 text-xs text-slate-500">
                                                             Assigned recently
                                                         </td>
+                                                        <td className="px-6 py-4 text-right text-[10px] text-slate-500 italic">
+                                                            Awaiting Answers
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             {submissions.interviews.map(session => (
@@ -1900,11 +2040,19 @@ const HRDashboard = () => {
                                                     <td className="px-6 py-4 text-xs text-slate-500">
                                                         {session.created_at ? new Date(session.created_at).toLocaleDateString() : 'N/A'}
                                                     </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button
+                                                            onClick={() => setSelectedInterviewAnswers(session)}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 transition-all select-none cursor-pointer"
+                                                        >
+                                                            <FileText className="w-3.5 h-3.5" /> View Answers ({session.answers?.length || 0})
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                             {candidates.filter(c => c.is_manual_mode).length === 0 && submissions.interviews.length === 0 && (
                                                 <tr>
-                                                    <td colSpan="5" className="text-center py-12 text-slate-500 text-xs font-semibold">No interviews or coding tasks scheduled yet.</td>
+                                                    <td colSpan="6" className="text-center py-12 text-slate-500 text-xs font-semibold">No interviews or coding tasks scheduled yet.</td>
                                                 </tr>
                                             )}
                                         </tbody>
@@ -1948,18 +2096,38 @@ const HRDashboard = () => {
                                 <div className="space-y-4">
                                     {submissions.interviews.length > 0 ? (
                                         submissions.interviews.map(session => (
-                                            <div key={session._id} className="bg-[#060B16]/40 border border-[#1E293B] rounded-2xl p-6">
+                                            <div key={session._id} className="bg-[#060B16]/40 border border-[#1E293B] rounded-2xl p-6 transition-all hover:border-cyan-500/20">
                                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4">
                                                     <div>
                                                         <div className="font-bold text-sm text-white flex items-center gap-2">
                                                             {session.candidate_name}
                                                             <span className="text-[9px] font-black uppercase tracking-wider bg-white/5 border border-white/10 px-2 py-0.5 rounded text-slate-400">{session.role}</span>
+                                                            <span className="text-[9px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20">
+                                                                {session.answers?.length || session.answers_count || 0} Q&A Answers
+                                                            </span>
                                                         </div>
                                                         <div className="text-[10px] text-slate-500 mt-0.5">{session.candidate_email}</div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <div className="text-[9px] uppercase font-black tracking-widest text-slate-500">Evaluation Score</div>
-                                                        <div className="text-xl font-black text-cyan-400 mt-1">{session.result?.overall_score || session.result?.score || 0}/100</div>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-right">
+                                                            <div className="text-[9px] uppercase font-black tracking-widest text-slate-500">Evaluation Score</div>
+                                                            <div className="text-xl font-black text-cyan-400 mt-0.5">{session.result?.overall_score || session.result?.score || 0}/100</div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => setSelectedInterviewAnswers(session)}
+                                                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-all select-none cursor-pointer shadow-lg shadow-cyan-500/10"
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5" /> View Candidate Answers ({session.answers?.length || 0})
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setExpandedAnswersId(expandedAnswersId === session._id ? null : session._id)}
+                                                                className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-all select-none cursor-pointer"
+                                                            >
+                                                                <span>{expandedAnswersId === session._id ? 'Collapse' : 'Inspect'}</span>
+                                                                {expandedAnswersId === session._id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -1971,6 +2139,53 @@ const HRDashboard = () => {
                                                         {renderFeedbackDetails(session.result?.feedback || session.result?.overall_feedback)}
                                                     </div>
                                                 </div>
+
+                                                {/* INLINE CANDIDATE Q&A ANSWERS ACCORDION */}
+                                                {expandedAnswersId === session._id && (
+                                                    <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <h4 className="text-xs font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                                                                <BookOpen className="w-4 h-4" /> Candidate Submitted Answers ({session.answers?.length || 0})
+                                                            </h4>
+                                                            <button
+                                                                onClick={() => setSelectedInterviewAnswers(session)}
+                                                                className="text-[10px] text-cyan-400 hover:underline font-bold uppercase cursor-pointer"
+                                                            >
+                                                                Open in Full Modal →
+                                                            </button>
+                                                        </div>
+
+                                                        {session.answers?.length > 0 ? (
+                                                            <div className="space-y-3">
+                                                                {session.answers.map((ans, aIdx) => (
+                                                                    <div key={ans._id || aIdx} className="bg-[#050A14] border border-white/5 rounded-xl p-4 space-y-2">
+                                                                        <div className="flex items-center justify-between text-[10px]">
+                                                                            <span className="font-bold text-cyan-400">Q{aIdx + 1}: {ans.question}</span>
+                                                                            {ans.evaluation?.score !== undefined && (
+                                                                                <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold">
+                                                                                    Score: {ans.evaluation.score}/10
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="bg-white/[0.02] border border-cyan-500/20 rounded-lg p-3 text-xs text-slate-200 leading-relaxed font-sans">
+                                                                            <div className="text-[9px] font-black uppercase text-cyan-400 mb-1">Candidate Answer:</div>
+                                                                            {ans.answer || <span className="text-rose-400 italic">[No answer recorded]</span>}
+                                                                        </div>
+                                                                        {ans.evaluation?.feedback && (
+                                                                            <p className="text-[11px] text-slate-400 italic">
+                                                                                AI Feedback: {typeof ans.evaluation.feedback === 'string' ? ans.evaluation.feedback : JSON.stringify(ans.evaluation.feedback)}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-4 rounded-xl bg-white/5 text-center text-xs text-slate-500">
+                                                                No individual question responses recorded for this session.
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     ) : (
@@ -2756,6 +2971,14 @@ const HRDashboard = () => {
                 <AIInterviewReviewModal
                     sessionData={reviewSession}
                     onClose={() => { setReviewSession(null); fetchAiSessions(); }}
+                />
+            )}
+
+            {/* MODAL: CANDIDATE INTERVIEW ANSWERS INSPECTOR */}
+            {selectedInterviewAnswers && (
+                <CandidateAnswersModal
+                    sessionData={selectedInterviewAnswers}
+                    onClose={() => setSelectedInterviewAnswers(null)}
                 />
             )}
         </div>

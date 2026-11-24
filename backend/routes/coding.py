@@ -29,11 +29,12 @@ def run_code(user_id):
     data = request.json
     language = data.get('language')
     code = data.get('code')
+    stdin_input = data.get('stdin_input', '')
     
     if not language or not code:
         return jsonify({"error": "Missing language or code"}), 400
         
-    result = ExecutionService.run_code(language, code)
+    result = ExecutionService.run_code(language, code, stdin_input=stdin_input)
     return jsonify(result), 200
 
 @coding_bp.route('/submit', methods=['POST'])

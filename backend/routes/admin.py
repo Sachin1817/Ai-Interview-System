@@ -453,9 +453,10 @@ def get_submissions(user_id):
     if not check_hr(user_id):
         return jsonify({"message": "Forbidden: HR access required"}), 403
         
-    completed_interviews = list(interviews_col.find({"status": "completed", "user_id": {"$ne": "guest_user"}}))
+    completed_interviews = list(interviews_col.find({"status": "completed", "user_id": {"$ne": "guest_user"}}).sort("started_at", -1))
     for x in completed_interviews:
-        x['_id'] = str(x['_id'])
+        s_id = str(x['_id'])
+        x['_id'] = s_id
         cand = None
         u_id = x.get('user_id')
         if u_id:
@@ -465,6 +466,32 @@ def get_submissions(user_id):
                 cand = users_col.find_one({"_id": u_id})
         x['candidate_name'] = cand.get('name', 'Unknown') if cand else 'Unknown'
         x['candidate_email'] = cand.get('email', '') if cand else ''
+
+        # Fetch candidate's actual answers from answers_col for this session
+        raw_answers = list(answers_col.find({
+            "$or": [
+                {"session_id": s_id},
+                {"session_id": ObjectId(s_id) if ObjectId.is_valid(s_id) else None}
+            ]
+        }).sort("answered_at", 1))
+
+        formatted_answers = []
+        for ans in raw_answers:
+            ans_time = ans.get('answered_at')
+            if isinstance(ans_time, datetime.datetime):
+                ans_time = ans_time.isoformat()
+            formatted_answers.append({
+                "_id": str(ans.get('_id', '')),
+                "question_id": ans.get('question_id', ''),
+                "question": ans.get('question', ''),
+                "answer": ans.get('answer', ''),
+                "topic": ans.get('topic', 'General'),
+                "round_type": ans.get('round_type', x.get('round_type', 'Technical')),
+                "evaluation": ans.get('evaluation') or {},
+                "answered_at": ans_time
+            })
+        x['answers'] = formatted_answers
+        x['answers_count'] = len(formatted_answers)
 
     coding_submits = list(submissions_col.find({"user_id": {"$ne": "guest_user"}}).sort("date", -1))
     for s in coding_submits:
@@ -485,6 +512,131 @@ def get_submissions(user_id):
         "interviews": completed_interviews,
         "coding_submissions": coding_submits
     }), 200
+
+@admin_bp.route('/interviews/<session_id>/answers', methods=['GET'])
+@token_required
+def get_interview_answers(user_id, session_id):
+    """Retrieve full interview questions, candidate answers, and scoring breakdown for HR Admin."""
+    if not check_hr(user_id):
+        return jsonify({"message": "Forbidden: HR access required"}), 403
+
+    session = None
+    try:
+        session = interviews_col.find_one({"_id": ObjectId(session_id)})
+    except Exception:
+        pass
+    if not session:
+        session = interviews_col.find_one({"_id": session_id})
+    if not session:
+        return jsonify({"message": "Interview session not found"}), 404
+
+    s_id = str(session['_id'])
+    cand_id = session.get('user_id')
+    cand = None
+    if cand_id:
+        try:
+            cand = users_col.find_one({"_id": ObjectId(cand_id)})
+        except Exception:
+            cand = users_col.find_one({"_id": cand_id})
+
+    # Fetch all answers for this session
+    raw_answers = list(answers_col.find({
+        "$or": [
+            {"session_id": s_id},
+            {"session_id": ObjectId(s_id) if ObjectId.is_valid(s_id) else None}
+        ]
+    }).sort("answered_at", 1))
+
+    formatted_answers = []
+    for ans in raw_answers:
+        ans_time = ans.get('answered_at')
+        if isinstance(ans_time, datetime.datetime):
+            ans_time = ans_time.isoformat()
+        formatted_answers.append({
+            "_id": str(ans.get('_id', '')),
+            "question_id": ans.get('question_id', ''),
+            "question": ans.get('question', ''),
+            "answer": ans.get('answer', ''),
+            "topic": ans.get('topic', 'General'),
+            "round_type": ans.get('round_type', session.get('round_type', 'Technical')),
+            "evaluation": ans.get('evaluation') or {},
+            "answered_at": ans_time
+        })
+
+    started_at = session.get('started_at')
+    if isinstance(started_at, datetime.datetime):
+        started_at = started_at.isoformat()
+    created_at = session.get('created_at')
+    if isinstance(created_at, datetime.datetime):
+        created_at = created_at.isoformat()
+
+    return jsonify({
+        "session_id": s_id,
+        "candidate_id": str(cand_id) if cand_id else None,
+        "candidate_name": cand.get('name', 'Unknown') if cand else 'Unknown',
+        "candidate_email": cand.get('email', '') if cand else '',
+        "role": session.get('role', 'Software Engineer'),
+        "branch": session.get('branch', 'CSE'),
+        "difficulty": session.get('difficulty', 'Beginner'),
+        "round_type": session.get('round_type', 'Technical'),
+        "status": session.get('status', 'completed'),
+        "result": session.get('result') or {},
+        "started_at": started_at,
+        "created_at": created_at,
+        "answers": formatted_answers,
+        "answers_count": len(formatted_answers)
+    }), 200
+
+@admin_bp.route('/candidates/<candidate_id>/interview-answers', methods=['GET'])
+@token_required
+def get_candidate_all_interview_answers(user_id, candidate_id):
+    """Retrieve all completed interview sessions and answers for a specific candidate for HR Admin review."""
+    if not check_hr(user_id):
+        return jsonify({"message": "Forbidden: HR access required"}), 403
+
+    cand_sessions = list(interviews_col.find({"user_id": candidate_id}).sort("started_at", -1))
+    results = []
+
+    for s in cand_sessions:
+        s_id = str(s['_id'])
+        raw_answers = list(answers_col.find({
+            "$or": [
+                {"session_id": s_id},
+                {"session_id": ObjectId(s_id) if ObjectId.is_valid(s_id) else None}
+            ]
+        }).sort("answered_at", 1))
+
+        formatted_answers = []
+        for ans in raw_answers:
+            ans_time = ans.get('answered_at')
+            if isinstance(ans_time, datetime.datetime):
+                ans_time = ans_time.isoformat()
+            formatted_answers.append({
+                "_id": str(ans.get('_id', '')),
+                "question": ans.get('question', ''),
+                "answer": ans.get('answer', ''),
+                "topic": ans.get('topic', 'General'),
+                "evaluation": ans.get('evaluation') or {},
+                "answered_at": ans_time
+            })
+
+        started_at = s.get('started_at')
+        if isinstance(started_at, datetime.datetime):
+            started_at = started_at.isoformat()
+
+        results.append({
+            "session_id": s_id,
+            "role": s.get('role', 'Software Engineer'),
+            "round_type": s.get('round_type', 'Technical'),
+            "difficulty": s.get('difficulty', 'Intermediate'),
+            "status": s.get('status', 'active'),
+            "result": s.get('result') or {},
+            "started_at": started_at,
+            "answers": formatted_answers,
+            "answers_count": len(formatted_answers)
+        })
+
+    return jsonify(results), 200
 
 @admin_bp.route('/apply', methods=['POST'])
 @token_required

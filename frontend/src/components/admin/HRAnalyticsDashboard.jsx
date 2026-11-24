@@ -13,6 +13,7 @@ const PERIODS = [
     { label: 'All Time', value: '3650' },
 ];
 
+
 const FunnelBar = ({ label, value, max, color }) => {
     const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
     return (
